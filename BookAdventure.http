@@ -322,39 +322,7 @@ Content-Type: {{contentType}}
 }
 
 ###################################
-### 10. FILE UPLOAD ENDPOINTS
-###################################
-
-### Upload a file
-POST {{baseUrl}}/api/files/upload
-Authorization: Bearer {{authToken}}
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="test-image.jpg"
-Content-Type: image/jpeg
-
-< ./path/to/your/test-image.jpg
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="description"
-
-Test image upload
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="folder"
-
-books
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
-
-### Check if file exists
-GET {{baseUrl}}/api/files/exists?filePath=uploads/books/test-file.jpg
-Authorization: Bearer {{authToken}}
-
-### Delete a file
-DELETE {{baseUrl}}/api/files?filePath=uploads/books/test-file.jpg&container=books
-Authorization: Bearer {{authToken}}
-
-###################################
-### 11. BULK OPERATIONS (Updated)
+### 10. BULK OPERATIONS (Updated)
 ###################################
 
 ### Get books by genre

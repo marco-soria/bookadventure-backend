@@ -1,5 +1,3 @@
-using BookAdventure.Dto.Validations;
-using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace BookAdventure.Dto.Request;
@@ -29,10 +27,6 @@ public class BookRequestDto
     
     [Url(ErrorMessage = "Must be a valid URL")]
     public string? ImageUrl { get; set; }
-
-    [FileTypeValidation(FileTypeGroup.Image)]
-    [FileSizeValidation(5)] // 5MB max
-    public IFormFile? ImageFile { get; set; }
 
     public bool IsAvailable { get; set; } = true;
 }

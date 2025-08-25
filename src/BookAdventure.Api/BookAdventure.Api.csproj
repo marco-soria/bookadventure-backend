@@ -20,16 +20,12 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
   </ItemGroup>
 
-   <ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\BookAdventure.Dto\BookAdventure.Dto.csproj" />
     <ProjectReference Include="..\BookAdventure.Entities\BookAdventure.Entities.csproj" />
     <ProjectReference Include="..\BookAdventure.Persistence\BookAdventure.Persistence.csproj" />
     <ProjectReference Include="..\BookAdventure.Repositories\BookAdventure.Repositories.csproj" />
     <ProjectReference Include="..\BookAdventure.Services\BookAdventure.Services.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

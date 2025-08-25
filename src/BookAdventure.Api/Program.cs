@@ -91,7 +91,6 @@ try
     builder.Services.AddScoped<IRentalOrderDetailService, RentalOrderDetailService>();
     builder.Services.AddScoped<IRentalQueryService, RentalQueryService>();
     builder.Services.AddScoped<IUserService, UserService>();
-    builder.Services.AddScoped<IFileStorage, FileStorageLocal>();
 
     // Registering Seeders
     builder.Services.AddScoped<UserDataSeeder>();
@@ -159,7 +158,6 @@ try
     }
 
     app.UseHttpsRedirection();
-    app.UseStaticFiles();
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseCors(corsConfiguration);
