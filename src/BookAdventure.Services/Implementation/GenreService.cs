@@ -4,6 +4,7 @@ using BookAdventure.Dto.Response;
 using BookAdventure.Entities;
 using BookAdventure.Repositories.Interfaces;
 using BookAdventure.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookAdventure.Services.Implementation;
 
@@ -18,14 +19,28 @@ public class GenreService : IGenreService
         _mapper = mapper;
     }
 
-    public async Task<BaseResponseGeneric<ICollection<GenreResponseDto>>> GetAsync()
+    public async Task<BaseResponseGeneric<List<GenreResponseDto>>> GetAsync()
     {
         try
         {
-            var genres = await _genreRepository.GetAllAsync();
-            var response = _mapper.Map<ICollection<GenreResponseDto>>(genres);
+            // Get genres with their books to calculate TotalBooks
+            var genres = await _genreRepository.Query()
+                .Include(g => g.Books.Where(b => b.Status == EntityStatus.Active))
+                .Where(g => g.Status == EntityStatus.Active)
+                .ToListAsync();
+            
+            // Manual mapping to avoid AutoMapper issues
+            var response = genres.Select(genre => new GenreResponseDto
+            {
+                Id = genre.Id,
+                Name = genre.Name,
+                Status = genre.Status == EntityStatus.Active,
+                CreatedAt = genre.CreatedAt,
+                UpdatedAt = genre.UpdatedAt,
+                TotalBooks = genre.Books?.Count ?? 0
+            }).ToList();
 
-            return new BaseResponseGeneric<ICollection<GenreResponseDto>>
+            return new BaseResponseGeneric<List<GenreResponseDto>>
             {
                 Success = true,
                 Data = response
@@ -33,7 +48,7 @@ public class GenreService : IGenreService
         }
         catch (Exception ex)
         {
-            return new BaseResponseGeneric<ICollection<GenreResponseDto>>
+            return new BaseResponseGeneric<List<GenreResponseDto>>
             {
                 Success = false,
                 ErrorMessage = $"Error retrieving genres: {ex.Message}"
@@ -45,7 +60,10 @@ public class GenreService : IGenreService
     {
         try
         {
-            var genre = await _genreRepository.GetByIdAsync(id);
+            // Get genre with its books to calculate TotalBooks
+            var genre = await _genreRepository.Query()
+                .Include(g => g.Books.Where(b => b.Status == EntityStatus.Active))
+                .FirstOrDefaultAsync(g => g.Id == id);
 
             if (genre == null)
             {
@@ -56,7 +74,16 @@ public class GenreService : IGenreService
                 };
             }
 
-            var response = _mapper.Map<GenreResponseDto>(genre);
+            // Manual mapping to avoid AutoMapper issues
+            var response = new GenreResponseDto
+            {
+                Id = genre.Id,
+                Name = genre.Name,
+                Status = genre.Status == EntityStatus.Active,
+                CreatedAt = genre.CreatedAt,
+                UpdatedAt = genre.UpdatedAt,
+                TotalBooks = genre.Books?.Count ?? 0
+            };
 
             return new BaseResponseGeneric<GenreResponseDto>
             {
@@ -89,7 +116,13 @@ public class GenreService : IGenreService
                 };
             }
 
-            var genre = _mapper.Map<Genre>(request);
+            // Manual mapping to avoid AutoMapper issues
+            var genre = new Genre
+            {
+                Name = request.Name,
+                Status = request.Status ? EntityStatus.Active : EntityStatus.Inactive
+            };
+            
             var createdGenre = await _genreRepository.CreateAsync(genre);
 
             return new BaseResponseGeneric<int>
@@ -133,7 +166,11 @@ public class GenreService : IGenreService
                 };
             }
 
-            _mapper.Map(request, existingGenre);
+            // Manual mapping to avoid AutoMapper issues
+            existingGenre.Name = request.Name;
+            existingGenre.Status = request.Status ? EntityStatus.Active : EntityStatus.Inactive;
+            existingGenre.UpdatedAt = DateTime.UtcNow;
+            
             await _genreRepository.UpdateAsync(existingGenre);
 
             return new BaseResponse { Success = true };
