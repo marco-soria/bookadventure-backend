@@ -5,6 +5,10 @@ using BookAdventure.Entities;
 using BookAdventure.Persistence;
 using BookAdventure.Persistence.Seeders;
 using BookAdventure.Services.Profiles;
+using BookAdventure.Services.Interfaces;
+using BookAdventure.Services.Implementation;
+using BookAdventure.Repositories.Interfaces;
+using BookAdventure.Repositories.Implementation;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -73,22 +77,21 @@ try
     builder.Services.Configure<AppSettings>(builder.Configuration);
 
     // Registering the BookAdventure Repositories
-    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IBookRepository, BookAdventure.Repositories.Implementation.BookRepository>();
-    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IGenreRepository, BookAdventure.Repositories.Implementation.GenreRepository>();
-    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.ICustomerRepository, BookAdventure.Repositories.Implementation.CustomerRepository>();
-    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IRentalOrderRepository, BookAdventure.Repositories.Implementation.RentalOrderRepository>();
-    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IRentalOrderDetailRepository, BookAdventure.Repositories.Implementation.RentalOrderDetailRepository>();
+    builder.Services.AddScoped<IBookRepository, BookRepository>();
+    builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+    builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+    builder.Services.AddScoped<IRentalOrderRepository, RentalOrderRepository>();
+    builder.Services.AddScoped<IRentalOrderDetailRepository, RentalOrderDetailRepository>();
 
     // Registering the BookAdventure Services
-    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IBookService, BookAdventure.Services.Implementation.BookService>();
-    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IGenreService, BookAdventure.Services.Implementation.GenreService>();
-    builder.Services.AddScoped<BookAdventure.Services.Interfaces.ICustomerService, BookAdventure.Services.Implementation.CustomerService>();
-    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IRentalOrderService, BookAdventure.Services.Implementation.RentalOrderService>();
-    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IRentalOrderDetailService, BookAdventure.Services.Implementation.RentalOrderDetailService>();
-    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IRentalQueryService, BookAdventure.Services.Implementation.RentalQueryService>();
-    // TODO: Implement UserService and FileStorageLocal
-    // builder.Services.AddScoped<BookAdventure.Services.Interfaces.IUserService, BookAdventure.Services.Implementation.UserService>();
-    // builder.Services.AddScoped<BookAdventure.Services.Interfaces.IFileStorage, BookAdventure.Services.Implementation.FileStorageLocal>();
+    builder.Services.AddScoped<IBookService, BookService>();
+    builder.Services.AddScoped<IGenreService, GenreService>();
+    builder.Services.AddScoped<ICustomerService, CustomerService>();
+    builder.Services.AddScoped<IRentalOrderService, RentalOrderService>();
+    builder.Services.AddScoped<IRentalOrderDetailService, RentalOrderDetailService>();
+    builder.Services.AddScoped<IRentalQueryService, RentalQueryService>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IFileStorage, FileStorageLocal>();
 
     // Registering Seeders
     builder.Services.AddScoped<UserDataSeeder>();

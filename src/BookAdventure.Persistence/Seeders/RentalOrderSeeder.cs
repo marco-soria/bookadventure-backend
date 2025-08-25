@@ -6,103 +6,81 @@ namespace BookAdventure.Persistence.Seeders;
 
 public class RentalOrderSeeder
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly ApplicationDbContext _context;
 
-    public RentalOrderSeeder(IServiceProvider serviceProvider)
+    public RentalOrderSeeder(ApplicationDbContext context)
     {
-        _serviceProvider = serviceProvider;
+        _context = context;
     }
 
     public async Task SeedAsync()
     {
-        using (var context = _serviceProvider.GetRequiredService<ApplicationDbContext>())
+        if (!await _context.RentalOrders.AnyAsync())
         {
-            if (!await context.RentalOrders.AnyAsync())
+            // Get existing customers and books
+            var customers = await _context.Customers.Take(3).ToListAsync();
+            var books = await _context.Books.Take(10).ToListAsync();
+
+            if (customers.Any() && books.Any())
             {
-                // Obtener customers y books existentes
-                var customers = await context.Customers.ToListAsync();
-                var books = await context.Books.Take(20).ToListAsync(); // Tomar algunos libros para alquilar
+                var random = new Random();
+                var orders = new List<RentalOrder>();
 
-                if (customers.Any() && books.Any())
+                // Create rental orders for each customer
+                foreach (var customer in customers)
                 {
-                    var random = new Random();
-                    var orders = new List<RentalOrder>();
-
-                    // Crear órdenes de alquiler para cada customer
-                    foreach (var customer in customers)
+                    // Create 1-2 orders per customer
+                    for (int i = 0; i < random.Next(1, 3); i++)
                     {
-                        // Crear 2-3 órdenes por customer para tener datos variados
-                        for (int i = 0; i < random.Next(2, 4); i++)
-                        {
-                            var orderDate = DateTime.UtcNow.AddDays(-random.Next(1, 90)); // Órdenes de los últimos 90 días
-                            var rentalDays = random.Next(7, 30); // Entre 7 y 30 días de alquiler
-                            var dueDate = orderDate.AddDays(rentalDays);
+                        var rentalDate = DateTime.UtcNow.AddDays(-random.Next(1, 30)); // Orders from last 30 days
+                        var dueDate = rentalDate.AddDays(14); // 14 days rental period
 
-                            var order = new RentalOrder
+                        var order = new RentalOrder
+                        {
+                            OrderNumber = $"RO{DateTime.UtcNow:yyyyMMdd}{customer.Id:D3}{i:D2}",
+                            CustomerId = customer.Id,
+                            OrderDate = rentalDate,
+                            DueDate = dueDate,
+                            OrderStatus = OrderStatus.Active,
+                            Status = EntityStatus.Active,
+                            CreatedAt = rentalDate,
+                            UpdatedAt = rentalDate,
+                            RentalOrderDetails = new List<RentalOrderDetail>()
+                        };
+
+                        // Add 1-3 books to each order
+                        var numBooks = random.Next(1, 4);
+                        var selectedBooks = books.OrderBy(x => random.Next()).Take(numBooks).ToList();
+
+                        foreach (var book in selectedBooks)
+                        {
+                            var quantity = 1; // For simplicity, always 1 copy
+                            var rentalDays = (dueDate - rentalDate).Days;
+                            var isReturned = random.Next(1, 10) > 3; // 70% returned
+                            var returnDate = isReturned ? dueDate.AddDays(random.Next(-2, 3)) : (DateTime?)null;
+
+                            var detail = new RentalOrderDetail
                             {
-                                OrderNumber = $"RO{DateTime.UtcNow:MMddHHmm}{customer.Id:D2}{i}",
-                                CustomerId = customer.Id,
-                                OrderDate = orderDate,
+                                BookId = book.Id,
+                                Quantity = quantity,
+                                RentalDays = rentalDays,
                                 DueDate = dueDate,
-                                ReturnDate = random.Next(1, 10) > 7 ? dueDate.AddDays(random.Next(-3, 5)) : null, // 70% devueltos
-                                OrderStatus = DetermineOrderStatus(orderDate, dueDate)
+                                ReturnDate = returnDate,
+                                IsReturned = isReturned,
+                                Status = EntityStatus.Active,
+                                CreatedAt = rentalDate,
+                                UpdatedAt = returnDate ?? rentalDate
                             };
 
-                            orders.Add(order);
+                            order.RentalOrderDetails.Add(detail);
                         }
+                        orders.Add(order);
                     }
-
-                    await context.RentalOrders.AddRangeAsync(orders);
-                    await context.SaveChangesAsync();
-
-                    // Crear detalles de las órdenes
-                    await CreateOrderDetails(context, orders, books);
                 }
+
+                await _context.RentalOrders.AddRangeAsync(orders);
+                await _context.SaveChangesAsync();
             }
         }
-    }
-
-    private async Task CreateOrderDetails(ApplicationDbContext context, List<RentalOrder> orders, List<Book> books)
-    {
-        var random = new Random();
-        var orderDetails = new List<RentalOrderDetail>();
-
-        foreach (var order in orders)
-        {
-            // Cada orden tiene entre 1 y 3 libros diferentes
-            var numBooks = random.Next(1, 4);
-            var selectedBooks = books.OrderBy(x => random.Next()).Take(numBooks).ToList();
-
-            foreach (var book in selectedBooks)
-            {
-                var quantity = random.Next(1, 3); // 1 o 2 copias del mismo libro
-                var rentalDays = (order.DueDate - order.OrderDate).Days;
-
-                var detail = new RentalOrderDetail
-                {
-                    RentalOrderId = order.Id,
-                    BookId = book.Id,
-                    Quantity = quantity,
-                    RentalDays = rentalDays
-                };
-
-                orderDetails.Add(detail);
-            }
-        }
-
-        await context.RentalOrderDetails.AddRangeAsync(orderDetails);
-        await context.SaveChangesAsync();
-    }
-
-    private OrderStatus DetermineOrderStatus(DateTime orderDate, DateTime dueDate)
-    {
-        var now = DateTime.UtcNow;
-        
-        if (now < dueDate)
-            return OrderStatus.Active;
-        else if (now <= dueDate.AddDays(7)) // Gracia de 7 días
-            return OrderStatus.Returned;
-        else
-            return OrderStatus.Overdue;
     }
 }

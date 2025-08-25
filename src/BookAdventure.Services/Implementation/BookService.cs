@@ -13,12 +13,18 @@ public class BookService : IBookService
 {
     private readonly IBookRepository _bookRepository;
     private readonly IGenreRepository _genreRepository;
+    private readonly IFileStorage _fileStorage;
     private readonly IMapper _mapper;
 
-    public BookService(IBookRepository bookRepository, IGenreRepository genreRepository, IMapper mapper)
+    public BookService(
+        IBookRepository bookRepository, 
+        IGenreRepository genreRepository, 
+        IFileStorage fileStorage,
+        IMapper mapper)
     {
         _bookRepository = bookRepository;
         _genreRepository = genreRepository;
+        _fileStorage = fileStorage;
         _mapper = mapper;
     }
 
@@ -102,6 +108,24 @@ public class BookService : IBookService
 
             var book = _mapper.Map<Book>(request);
             book.IsAvailable = book.Stock > 0;
+
+            // Handle file upload if provided
+            if (request.ImageFile != null)
+            {
+                try
+                {
+                    var imagePath = await _fileStorage.SaveFileAsync(request.ImageFile, "books");
+                    book.ImageUrl = _fileStorage.GetFileUrl(imagePath);
+                }
+                catch (Exception ex)
+                {
+                    return new BaseResponseGeneric<int>
+                    {
+                        Success = false,
+                        ErrorMessage = $"Error uploading image: {ex.Message}"
+                    };
+                }
+            }
             
             var createdBook = await _bookRepository.CreateAsync(book);
 
@@ -146,8 +170,35 @@ public class BookService : IBookService
                 };
             }
 
+            // Store old image URL for deletion if new file is uploaded
+            var oldImageUrl = existingBook.ImageUrl;
+
             _mapper.Map(request, existingBook);
             existingBook.IsAvailable = existingBook.Stock > 0;
+
+            // Handle file upload if provided
+            if (request.ImageFile != null)
+            {
+                try
+                {
+                    var imagePath = await _fileStorage.SaveFileAsync(request.ImageFile, "books");
+                    existingBook.ImageUrl = _fileStorage.GetFileUrl(imagePath);
+
+                    // Delete old image if it exists and is not a URL
+                    if (!string.IsNullOrEmpty(oldImageUrl) && !oldImageUrl.StartsWith("http"))
+                    {
+                        await _fileStorage.DeleteFile(oldImageUrl, "books");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = $"Error uploading image: {ex.Message}"
+                    };
+                }
+            }
             
             await _bookRepository.UpdateAsync(existingBook);
 

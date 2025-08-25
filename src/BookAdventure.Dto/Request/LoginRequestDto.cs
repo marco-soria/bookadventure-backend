@@ -1,8 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace BookAdventure.Dto.Request;
 
 public class LoginRequestDto
 {
-    public string Username { get; set; }
-    public string Password { get; set; }
-
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = default!;
+    
+    [Required]
+    public string Password { get; set; } = default!;
 }

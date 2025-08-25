@@ -19,7 +19,7 @@ public class RegisterRequestDto
     [Required]
     public string DocumentNumber { get; set; } = default!;
 
-    public int DocumentType { get; set; }
+    
 
     public int Age { get; set; }
 

@@ -67,7 +67,8 @@ public class MasterSeeder
             Console.WriteLine("🎯 Creating rental orders...");
             using (var scope5 = _serviceProvider.CreateScope())
             {
-                var rentalOrderSeeder = new RentalOrderSeeder(scope5.ServiceProvider);
+                var context = scope5.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var rentalOrderSeeder = new RentalOrderSeeder(context);
                 await rentalOrderSeeder.SeedAsync();
             }
 
