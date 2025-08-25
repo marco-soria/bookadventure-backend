@@ -1,0 +1,19 @@
+namespace BookAdventure.Dto.Response;
+
+public class CustomerResponseDto
+{
+    public int Id { get; set; }
+    public string Email { get; set; } = default!;
+    public string FirstName { get; set; } = default!;
+    public string LastName { get; set; } = default!;
+    public string FullName { get; set; } = default!;
+    public string DNI { get; set; } = default!;
+    public int Age { get; set; }
+    public string? PhoneNumber { get; set; }
+    public bool Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    
+    // Statistics
+    public int TotalOrders { get; set; }
+}
