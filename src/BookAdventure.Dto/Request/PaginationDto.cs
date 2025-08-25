@@ -4,13 +4,17 @@ namespace BookAdventure.Dto.Request;
 
 public class PaginationDto
 {
-    [Range(1, int.MaxValue, ErrorMessage = "Page must be greater than 0")]
-    public int Page { get; set; } = 1;
+    private int page = 1;
+    
+    public int Page 
+    { 
+        get => page;
+        set => page = value > 0 ? value : 1; // Default to 1 if invalid
+    }
     
     private int recordsPerPage = 10;
     private readonly int maxRecordsPerPage = 50;
 
-    [Range(1, 100, ErrorMessage = "Records per page must be between 1 and 100")]
     public int RecordsPerPage
     {
         get
@@ -20,6 +24,7 @@ public class PaginationDto
         set
         {
             recordsPerPage = (value > maxRecordsPerPage) ? maxRecordsPerPage : value;
+            if (recordsPerPage <= 0) recordsPerPage = 10; // Default to 10 if invalid
         }
     }
     

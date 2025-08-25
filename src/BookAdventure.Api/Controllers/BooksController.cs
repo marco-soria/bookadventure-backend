@@ -9,15 +9,20 @@ namespace BookAdventure.Api.Controllers;
 public class BooksController : ControllerBase
 {
     private readonly IBookService _bookService;
+    private readonly ILogger<BooksController> _logger;
 
-    public BooksController(IBookService bookService)
+    public BooksController(IBookService bookService, ILogger<BooksController> logger)
     {
         _bookService = bookService;
+        _logger = logger;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] PaginationDto pagination)
+    public async Task<IActionResult> Get([FromQuery] PaginationDto? pagination = null)
     {
+        // Provide default pagination if none is provided
+        pagination ??= new PaginationDto();
+        
         var response = await _bookService.GetAsync(pagination);
         
         if (response.Success && response.TotalRecords.HasValue)
@@ -71,8 +76,11 @@ public class BooksController : ControllerBase
     }
 
     [HttpGet("genre/{genreId:int}")]
-    public async Task<IActionResult> GetByGenre(int genreId, [FromQuery] PaginationDto pagination)
+    public async Task<IActionResult> GetByGenre(int genreId, [FromQuery] PaginationDto? pagination = null)
     {
+        // Provide default pagination if none is provided
+        pagination ??= new PaginationDto();
+        
         var response = await _bookService.GetByGenreAsync(genreId, pagination);
         
         if (response.Success && response.TotalRecords.HasValue)

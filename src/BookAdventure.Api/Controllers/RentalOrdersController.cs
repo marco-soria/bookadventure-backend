@@ -9,10 +9,12 @@ namespace BookAdventure.Api.Controllers;
 public class RentalOrdersController : ControllerBase
 {
     private readonly IRentalOrderService _rentalOrderService;
+    private readonly ILogger<RentalOrdersController> _logger;
 
-    public RentalOrdersController(IRentalOrderService rentalOrderService)
+    public RentalOrdersController(IRentalOrderService rentalOrderService, ILogger<RentalOrdersController> logger)
     {
         _rentalOrderService = rentalOrderService;
+        _logger = logger;
     }
 
     [HttpGet]

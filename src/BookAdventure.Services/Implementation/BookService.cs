@@ -28,7 +28,7 @@ public class BookService : IBookService
         _mapper = mapper;
     }
 
-    public async Task<BaseResponseGeneric<ICollection<BookResponseDto>>> GetAsync(PaginationDto pagination)
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> GetAsync(PaginationDto pagination)
     {
         try
         {
@@ -39,9 +39,24 @@ public class BookService : IBookService
 
             var totalRecords = await _bookRepository.CountAsync();
             
-            var response = _mapper.Map<ICollection<BookResponseDto>>(books);
+            // Manual mapping to avoid AutoMapper issues
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
 
-            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            return new BaseResponseGeneric<List<BookResponseDto>>
             {
                 Success = true,
                 Data = response,
@@ -50,7 +65,7 @@ public class BookService : IBookService
         }
         catch (Exception ex)
         {
-            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            return new BaseResponseGeneric<List<BookResponseDto>>
             {
                 Success = false,
                 ErrorMessage = $"Error retrieving books: {ex.Message}"
@@ -73,7 +88,22 @@ public class BookService : IBookService
                 };
             }
 
-            var response = _mapper.Map<BookResponseDto>(book);
+            // Manual mapping to avoid AutoMapper issues
+            var response = new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            };
 
             return new BaseResponseGeneric<BookResponseDto>
             {
@@ -241,14 +271,30 @@ public class BookService : IBookService
         }
     }
 
-    public async Task<BaseResponseGeneric<ICollection<BookResponseDto>>> SearchAsync(string title)
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> SearchAsync(string title)
     {
         try
         {
             var books = await _bookRepository.SearchByTitleAsync(title);
-            var response = _mapper.Map<ICollection<BookResponseDto>>(books);
+            
+            // Manual mapping to avoid AutoMapper issues
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
 
-            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            return new BaseResponseGeneric<List<BookResponseDto>>
             {
                 Success = true,
                 Data = response
@@ -256,7 +302,7 @@ public class BookService : IBookService
         }
         catch (Exception ex)
         {
-            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            return new BaseResponseGeneric<List<BookResponseDto>>
             {
                 Success = false,
                 ErrorMessage = $"Error searching books: {ex.Message}"
@@ -264,7 +310,7 @@ public class BookService : IBookService
         }
     }
 
-    public async Task<BaseResponseGeneric<ICollection<BookResponseDto>>> GetByGenreAsync(int genreId, PaginationDto pagination)
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> GetByGenreAsync(int genreId, PaginationDto pagination)
     {
         try
         {
@@ -278,9 +324,24 @@ public class BookService : IBookService
                 .Where(b => b.GenreId == genreId)
                 .CountAsync();
 
-            var response = _mapper.Map<ICollection<BookResponseDto>>(books);
+            // Manual mapping to avoid AutoMapper issues
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
 
-            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            return new BaseResponseGeneric<List<BookResponseDto>>
             {
                 Success = true,
                 Data = response,
@@ -289,7 +350,7 @@ public class BookService : IBookService
         }
         catch (Exception ex)
         {
-            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            return new BaseResponseGeneric<List<BookResponseDto>>
             {
                 Success = false,
                 ErrorMessage = $"Error retrieving books by genre: {ex.Message}"

@@ -9,10 +9,12 @@ namespace BookAdventure.Api.Controllers;
 public class CustomersController : ControllerBase
 {
     private readonly ICustomerService _customerService;
+    private readonly ILogger<CustomersController> _logger;
 
-    public CustomersController(ICustomerService customerService)
+    public CustomersController(ICustomerService customerService, ILogger<CustomersController> logger)
     {
         _customerService = customerService;
+        _logger = logger;
     }
 
     [HttpGet]

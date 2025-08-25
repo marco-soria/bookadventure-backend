@@ -12,10 +12,12 @@ namespace BookAdventure.Api.Controllers;
 public class FilesController : ControllerBase
 {
     private readonly IFileStorage _fileStorage;
+    private readonly ILogger<FilesController> _logger;
 
-    public FilesController(IFileStorage fileStorage)
+    public FilesController(IFileStorage fileStorage, ILogger<FilesController> logger)
     {
         _fileStorage = fileStorage;
+        _logger = logger;
     }
 
     /// <summary>
