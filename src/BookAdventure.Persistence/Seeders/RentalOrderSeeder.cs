@@ -40,7 +40,7 @@ public class RentalOrderSeeder
 
                             var order = new RentalOrder
                             {
-                                OrderNumber = $"RO-{DateTime.UtcNow.Ticks}-{customer.Id}-{i}",
+                                OrderNumber = $"RO{DateTime.UtcNow:MMddHHmm}{customer.Id:D2}{i}",
                                 CustomerId = customer.Id,
                                 OrderDate = orderDate,
                                 DueDate = dueDate,

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace BookAdventure.Persistence.Seeders;
 
 /// <summary>
@@ -26,30 +28,48 @@ public class MasterSeeder
         {
             Console.WriteLine("🌱 Initializing seeding process...");
 
+            // Cada seeder en su propio scope para evitar problemas de contexto
+            
             // 1. Roles y usuario administrador
             Console.WriteLine("📋 Creating roles and admin user...");
-            var userDataSeeder = new UserDataSeeder(_serviceProvider);
-            await userDataSeeder.SeedAsync();
+            using (var scope1 = _serviceProvider.CreateScope())
+            {
+                var userDataSeeder = new UserDataSeeder(scope1.ServiceProvider);
+                await userDataSeeder.SeedAsync();
+            }
 
             // 2. Géneros de libros
             Console.WriteLine("📚 Creating book genres...");
-            var genreSeeder = new GenreSeeder(_serviceProvider);
-            await genreSeeder.SeedAsync();
+            using (var scope2 = _serviceProvider.CreateScope())
+            {
+                var genreSeeder = new GenreSeeder(scope2.ServiceProvider);
+                await genreSeeder.SeedAsync();
+            }
 
             // 3. Libros de muestra
             Console.WriteLine("📖 Creating sample books...");
-            var bookSeeder = new BookSeeder(_serviceProvider);
-            await bookSeeder.SeedAsync();
+            using (var scope3 = _serviceProvider.CreateScope())
+            {
+                var context = scope3.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var bookSeeder = new BookSeeder(context);
+                await bookSeeder.SeedAsync();
+            }
 
             // 4. Usuarios customer y entidades Customer
             Console.WriteLine("👥 Creating customer users...");
-            var customerSeeder = new CustomerSeeder(_serviceProvider);
-            await customerSeeder.SeedAsync();
+            using (var scope4 = _serviceProvider.CreateScope())
+            {
+                var customerSeeder = new CustomerSeeder(scope4.ServiceProvider);
+                await customerSeeder.SeedAsync();
+            }
 
             // 5. Órdenes de alquiler de prueba
             Console.WriteLine("🎯 Creating rental orders...");
-            var rentalOrderSeeder = new RentalOrderSeeder(_serviceProvider);
-            await rentalOrderSeeder.SeedAsync();
+            using (var scope5 = _serviceProvider.CreateScope())
+            {
+                var rentalOrderSeeder = new RentalOrderSeeder(scope5.ServiceProvider);
+                await rentalOrderSeeder.SeedAsync();
+            }
 
             Console.WriteLine("✅ Seeding process completed successfully!");
         }

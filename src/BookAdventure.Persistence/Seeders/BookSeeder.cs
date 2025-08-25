@@ -6,32 +6,30 @@ namespace BookAdventure.Persistence.Seeders;
 
 public class BookSeeder
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly ApplicationDbContext _context;
 
-    public BookSeeder(IServiceProvider serviceProvider)
+    public BookSeeder(ApplicationDbContext context)
     {
-        _serviceProvider = serviceProvider;
+        _context = context;
     }
 
     public async Task SeedAsync()
     {
-        using (var context = _serviceProvider.GetRequiredService<ApplicationDbContext>())
+        if (!await _context.Books.AnyAsync())
         {
-            if (!await context.Books.AnyAsync())
-            {
-                // Get genres from database
-                var fiction = await context.Genres.FirstAsync(g => g.Name == "Fiction");
-                var nonFiction = await context.Genres.FirstAsync(g => g.Name == "Non-Fiction");
-                var scienceFiction = await context.Genres.FirstAsync(g => g.Name == "Science Fiction");
-                var fantasy = await context.Genres.FirstAsync(g => g.Name == "Fantasy");
-                var mystery = await context.Genres.FirstAsync(g => g.Name == "Mystery");
-                var romance = await context.Genres.FirstAsync(g => g.Name == "Romance");
-                var thriller = await context.Genres.FirstAsync(g => g.Name == "Thriller");
-                var horror = await context.Genres.FirstAsync(g => g.Name == "Horror");
-                var biography = await context.Genres.FirstAsync(g => g.Name == "Biography");
-                var history = await context.Genres.FirstAsync(g => g.Name == "History");
-                var selfHelp = await context.Genres.FirstAsync(g => g.Name == "Self-Help");
-                var technology = await context.Genres.FirstAsync(g => g.Name == "Technology");
+            // Get genres from database
+            var fiction = await _context.Genres.FirstAsync(g => g.Name == "Fiction");
+            var nonFiction = await _context.Genres.FirstAsync(g => g.Name == "Non-Fiction");
+            var scienceFiction = await _context.Genres.FirstAsync(g => g.Name == "Science Fiction");
+            var fantasy = await _context.Genres.FirstAsync(g => g.Name == "Fantasy");
+            var mystery = await _context.Genres.FirstAsync(g => g.Name == "Mystery");
+            var romance = await _context.Genres.FirstAsync(g => g.Name == "Romance");
+            var thriller = await _context.Genres.FirstAsync(g => g.Name == "Thriller");
+            var horror = await _context.Genres.FirstAsync(g => g.Name == "Horror");
+            var biography = await _context.Genres.FirstAsync(g => g.Name == "Biography");
+            var history = await _context.Genres.FirstAsync(g => g.Name == "History");
+            var selfHelp = await _context.Genres.FirstAsync(g => g.Name == "Self-Help");
+            var technology = await _context.Genres.FirstAsync(g => g.Name == "Technology");
 
                 var books = new List<Book>
                 {
@@ -108,9 +106,8 @@ public class BookSeeder
                     new() { Title = "You Don't Know JS", Author = "Kyle Simpson", ISBN = "9781491924464", Description = "Up and going with JavaScript", Stock = 24, GenreId = technology.Id, ImageUrl = "https://covers.openlibrary.org/b/isbn/9781491924464-L.jpg" }
                 };
 
-                await context.Books.AddRangeAsync(books);
-                await context.SaveChangesAsync();
+                await _context.Books.AddRangeAsync(books);
+                await _context.SaveChangesAsync();
             }
-        }
     }
 }
