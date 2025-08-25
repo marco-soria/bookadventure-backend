@@ -72,8 +72,23 @@ try
 
     builder.Services.Configure<AppSettings>(builder.Configuration);
 
-    // Registering the BookAdventure Repositories and Services
-    // TODO: Add repository and service registrations here
+    // Registering the BookAdventure Repositories
+    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IBookRepository, BookAdventure.Repositories.Implementation.BookRepository>();
+    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IGenreRepository, BookAdventure.Repositories.Implementation.GenreRepository>();
+    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.ICustomerRepository, BookAdventure.Repositories.Implementation.CustomerRepository>();
+    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IRentalOrderRepository, BookAdventure.Repositories.Implementation.RentalOrderRepository>();
+    builder.Services.AddScoped<BookAdventure.Repositories.Interfaces.IRentalOrderDetailRepository, BookAdventure.Repositories.Implementation.RentalOrderDetailRepository>();
+
+    // Registering the BookAdventure Services
+    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IBookService, BookAdventure.Services.Implementation.BookService>();
+    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IGenreService, BookAdventure.Services.Implementation.GenreService>();
+    builder.Services.AddScoped<BookAdventure.Services.Interfaces.ICustomerService, BookAdventure.Services.Implementation.CustomerService>();
+    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IRentalOrderService, BookAdventure.Services.Implementation.RentalOrderService>();
+    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IRentalOrderDetailService, BookAdventure.Services.Implementation.RentalOrderDetailService>();
+    builder.Services.AddScoped<BookAdventure.Services.Interfaces.IRentalQueryService, BookAdventure.Services.Implementation.RentalQueryService>();
+    // TODO: Implement UserService and FileStorageLocal
+    // builder.Services.AddScoped<BookAdventure.Services.Interfaces.IUserService, BookAdventure.Services.Implementation.UserService>();
+    // builder.Services.AddScoped<BookAdventure.Services.Interfaces.IFileStorage, BookAdventure.Services.Implementation.FileStorageLocal>();
 
     // Registering Seeders
     builder.Services.AddScoped<UserDataSeeder>();

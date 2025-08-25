@@ -1,8 +1,263 @@
-using System;
+using AutoMapper;
+using BookAdventure.Dto.Request;
+using BookAdventure.Dto.Response;
+using BookAdventure.Entities;
+using BookAdventure.Repositories.Interfaces;
+using BookAdventure.Repositories.Utils;
+using BookAdventure.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookAdventure.Services.Implementation;
 
-public class BookService
+public class BookService : IBookService
 {
+    private readonly IBookRepository _bookRepository;
+    private readonly IGenreRepository _genreRepository;
+    private readonly IMapper _mapper;
 
+    public BookService(IBookRepository bookRepository, IGenreRepository genreRepository, IMapper mapper)
+    {
+        _bookRepository = bookRepository;
+        _genreRepository = genreRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<BaseResponseGeneric<ICollection<BookResponseDto>>> GetAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var books = await _bookRepository.Query()
+                .Include(b => b.Genre)
+                .Paginate(pagination)
+                .ToListAsync();
+
+            var totalRecords = await _bookRepository.CountAsync();
+            
+            var response = _mapper.Map<ICollection<BookResponseDto>>(books);
+
+            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving books: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponseGeneric<BookResponseDto>> GetAsync(int id)
+    {
+        try
+        {
+            var book = await _bookRepository.GetByIdAsync(id);
+
+            if (book == null)
+            {
+                return new BaseResponseGeneric<BookResponseDto>
+                {
+                    Success = false,
+                    ErrorMessage = "Book not found"
+                };
+            }
+
+            var response = _mapper.Map<BookResponseDto>(book);
+
+            return new BaseResponseGeneric<BookResponseDto>
+            {
+                Success = true,
+                Data = response
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<BookResponseDto>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving book: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponseGeneric<int>> AddAsync(BookRequestDto request)
+    {
+        try
+        {
+            // Validate genre exists
+            var genre = await _genreRepository.GetByIdAsync(request.GenreId);
+            if (genre == null)
+            {
+                return new BaseResponseGeneric<int>
+                {
+                    Success = false,
+                    ErrorMessage = "Genre not found"
+                };
+            }
+
+            var book = _mapper.Map<Book>(request);
+            book.IsAvailable = book.Stock > 0;
+            
+            var createdBook = await _bookRepository.CreateAsync(book);
+
+            return new BaseResponseGeneric<int>
+            {
+                Success = true,
+                Data = createdBook.Id
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<int>
+            {
+                Success = false,
+                ErrorMessage = $"Error creating book: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponse> UpdateAsync(int id, BookRequestDto request)
+    {
+        try
+        {
+            var existingBook = await _bookRepository.GetByIdAsync(id);
+            if (existingBook == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Book not found"
+                };
+            }
+
+            // Validate genre exists
+            var genre = await _genreRepository.GetByIdAsync(request.GenreId);
+            if (genre == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Genre not found"
+                };
+            }
+
+            _mapper.Map(request, existingBook);
+            existingBook.IsAvailable = existingBook.Stock > 0;
+            
+            await _bookRepository.UpdateAsync(existingBook);
+
+            return new BaseResponse { Success = true };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error updating book: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponse> DeleteAsync(int id)
+    {
+        try
+        {
+            var success = await _bookRepository.SoftDeleteAsync(id);
+
+            if (!success)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Book not found"
+                };
+            }
+
+            return new BaseResponse { Success = true };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error deleting book: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponseGeneric<ICollection<BookResponseDto>>> SearchAsync(string title)
+    {
+        try
+        {
+            var books = await _bookRepository.SearchByTitleAsync(title);
+            var response = _mapper.Map<ICollection<BookResponseDto>>(books);
+
+            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            {
+                Success = true,
+                Data = response
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error searching books: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponseGeneric<ICollection<BookResponseDto>>> GetByGenreAsync(int genreId, PaginationDto pagination)
+    {
+        try
+        {
+            var books = await _bookRepository.Query()
+                .Where(b => b.GenreId == genreId)
+                .Include(b => b.Genre)
+                .Paginate(pagination)
+                .ToListAsync();
+
+            var totalRecords = await _bookRepository.Query()
+                .Where(b => b.GenreId == genreId)
+                .CountAsync();
+
+            var response = _mapper.Map<ICollection<BookResponseDto>>(books);
+
+            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving books by genre: {ex.Message}"
+            };
+        }
+    }
+
+    // Base service implementations
+    public async Task<IEnumerable<Book>> GetAllAsync() => await _bookRepository.GetAllAsync();
+    public async Task<IEnumerable<Book>> GetAllIncludingDeletedAsync() => await _bookRepository.GetAllIncludingDeletedAsync();
+    public async Task<Book?> GetByIdAsync(int id) => await _bookRepository.GetByIdAsync(id);
+    public async Task<Book?> GetByIdIncludingDeletedAsync(int id) => await _bookRepository.GetByIdIncludingDeletedAsync(id);
+    public async Task<IEnumerable<Book>> FindAsync(System.Linq.Expressions.Expression<Func<Book, bool>> predicate) => await _bookRepository.FindAsync(predicate);
+    public async Task<Book> CreateAsync(Book entity) => await _bookRepository.CreateAsync(entity);
+    public async Task<Book?> UpdateAsync(Book entity) => await _bookRepository.UpdateAsync(entity);
+    public async Task<bool> SoftDeleteAsync(int id) => await _bookRepository.SoftDeleteAsync(id);
+    public async Task<bool> RestoreAsync(int id) => await _bookRepository.RestoreAsync(id);
+    public async Task<bool> HardDeleteAsync(int id) => await _bookRepository.HardDeleteAsync(id);
+    public async Task<bool> ExistsAsync(int id) => await _bookRepository.ExistsAsync(id);
+    public async Task<int> CountAsync() => await _bookRepository.CountAsync();
+    public async Task<int> CountIncludingDeletedAsync() => await _bookRepository.CountIncludingDeletedAsync();
 }

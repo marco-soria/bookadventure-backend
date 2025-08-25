@@ -10,10 +10,12 @@ public class CustomerResponseDto
     public string DNI { get; set; } = default!;
     public int Age { get; set; }
     public string? PhoneNumber { get; set; }
-    public bool Status { get; set; }
+    public string Status { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     
     // Statistics
-    public int TotalOrders { get; set; }
+    public int TotalRentalOrders { get; set; }
+    public int ActiveRentals { get; set; }
+    public int OverdueRentals { get; set; }
 }

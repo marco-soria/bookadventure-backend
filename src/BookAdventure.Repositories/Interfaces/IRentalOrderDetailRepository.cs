@@ -1,12 +1,11 @@
 using BookAdventure.Entities;
-using BookAdventure.Services.Interfaces.Base;
 
-namespace BookAdventure.Services.Interfaces;
+namespace BookAdventure.Repositories.Interfaces;
 
-public interface IRentalOrderDetailService : IBaseService<RentalOrderDetail>
+public interface IRentalOrderDetailRepository : IBaseRepository<RentalOrderDetail>
 {
     Task<IEnumerable<RentalOrderDetail>> GetByRentalOrderIdAsync(int rentalOrderId);
     Task<RentalOrderDetail?> GetByRentalOrderAndBookAsync(int rentalOrderId, int bookId);
-    Task<bool> ReturnBookAsync(int rentalOrderId, int bookId);
     Task<IEnumerable<RentalOrderDetail>> GetOverdueDetailsAsync();
+    Task<IEnumerable<RentalOrderDetail>> GetActiveRentalsForBookAsync(int bookId);
 }

@@ -20,6 +20,8 @@ public class Book : BaseEntity
     
     public int Stock { get; set; }
     
+    public bool IsAvailable { get; set; } = true;
+    
     [MaxLength(500)]
     public string? ImageUrl { get; set; }
     

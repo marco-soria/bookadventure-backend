@@ -20,6 +20,11 @@ public class CustomerProfile : Profile
             
         // Entity to Response
         CreateMap<Customer, CustomerResponseDto>()
-            .ForMember(dest => dest.TotalOrders, opt => opt.MapFrom(src => src.RentalOrders.Count));
+            .ForMember(dest => dest.TotalRentalOrders, opt => opt.MapFrom(src => src.RentalOrders.Count))
+            .ForMember(dest => dest.ActiveRentals, opt => opt.MapFrom(src => src.RentalOrders.Count(ro => ro.OrderStatus == OrderStatus.Active)))
+            .ForMember(dest => dest.OverdueRentals, opt => opt.MapFrom(src => src.RentalOrders
+                .Where(ro => ro.OrderStatus == OrderStatus.Active)
+                .SelectMany(ro => ro.RentalOrderDetails)
+                .Count(rod => rod.DueDate < DateTime.UtcNow && !rod.IsReturned)));
     }
 }

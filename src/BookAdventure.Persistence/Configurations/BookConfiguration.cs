@@ -30,6 +30,9 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
         builder.Property(x => x.ImageUrl)
             .HasMaxLength(500);
             
+        builder.Property(x => x.IsAvailable)
+            .HasDefaultValue(true);
+            
         // Relationships
         builder.HasOne(x => x.Genre)
             .WithMany(x => x.Books)
@@ -43,6 +46,7 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
             .IsUnique()
             .HasFilter("[ISBN] IS NOT NULL");
         builder.HasIndex(x => x.GenreId);
+        builder.HasIndex(x => x.IsAvailable);
         
         // Query Filters - handled globally in ApplicationDbContext
         // builder.HasQueryFilter(x => x.Status != EntityStatus.Deleted);

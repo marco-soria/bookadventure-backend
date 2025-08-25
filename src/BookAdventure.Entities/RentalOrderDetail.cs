@@ -8,6 +8,12 @@ public class RentalOrderDetail : BaseEntity
     
     public int RentalDays { get; set; }
     
+    public DateTime DueDate { get; set; }
+    
+    public DateTime? ReturnDate { get; set; }
+    
+    public bool IsReturned { get; set; } = false;
+    
     [MaxLength(200)]
     public string? Notes { get; set; }
     

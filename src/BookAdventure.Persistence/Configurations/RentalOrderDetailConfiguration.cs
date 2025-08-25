@@ -15,6 +15,12 @@ public class RentalOrderDetailConfiguration : IEntityTypeConfiguration<RentalOrd
         builder.Property(x => x.Notes)
             .HasMaxLength(200);
             
+        builder.Property(x => x.IsReturned)
+            .HasDefaultValue(false);
+            
+        builder.Property(x => x.DueDate)
+            .IsRequired();
+            
         // Relationships
         builder.HasOne(x => x.RentalOrder)
             .WithMany(x => x.RentalOrderDetails)
@@ -29,6 +35,8 @@ public class RentalOrderDetailConfiguration : IEntityTypeConfiguration<RentalOrd
         // Indexes
         builder.HasIndex(x => x.RentalOrderId);
         builder.HasIndex(x => x.BookId);
+        builder.HasIndex(x => x.DueDate);
+        builder.HasIndex(x => x.IsReturned);
         builder.HasIndex(x => new { x.RentalOrderId, x.BookId })
             .IsUnique();
             
