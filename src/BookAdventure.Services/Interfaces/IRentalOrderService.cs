@@ -10,7 +10,7 @@ public interface IRentalOrderService : IBaseService<RentalOrder>
     Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetAsync(PaginationDto pagination);
     Task<BaseResponseGeneric<RentalOrderResponseDto>> GetAsync(int id);
     Task<BaseResponseGeneric<int>> CreateRentalOrderAsync(RentalOrderRequestDto request);
-    Task<BaseResponse> UpdateAsync(int id, RentalOrderRequestDto request);
+    Task<BaseResponse> UpdateAsync(int id, RentalOrderUpdateRequestDto request);
     Task<BaseResponse> DeleteAsync(int id);
     Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetByCustomerAsync(int customerId, PaginationDto pagination);
     Task<BaseResponse> ReturnBooksAsync(int rentalOrderId, List<int> bookIds);

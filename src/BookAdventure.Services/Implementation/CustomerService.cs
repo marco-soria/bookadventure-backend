@@ -125,7 +125,7 @@ public class CustomerService : ICustomerService
         }
     }
 
-    public async Task<BaseResponse> UpdateAsync(int id, CustomerRequestDto request)
+    public async Task<BaseResponse> UpdateAsync(int id, CustomerUpdateRequestDto request)
     {
         try
         {
@@ -139,28 +139,49 @@ public class CustomerService : ICustomerService
                 };
             }
 
-            // Check if another customer with the same DNI or email exists
-            var customerWithSameDni = await _customerRepository.GetByDniAsync(request.DNI);
-            if (customerWithSameDni != null && customerWithSameDni.Id != id)
+            // Check if another customer with the same DNI exists (only if DNI is provided)
+            if (!string.IsNullOrEmpty(request.DNI))
             {
-                return new BaseResponse
+                var customerWithSameDni = await _customerRepository.GetByDniAsync(request.DNI);
+                if (customerWithSameDni != null && customerWithSameDni.Id != id)
                 {
-                    Success = false,
-                    ErrorMessage = "Another customer with this DNI already exists"
-                };
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Another customer with this DNI already exists"
+                    };
+                }
+                existingCustomer.DNI = request.DNI;
             }
 
-            var customerWithSameEmail = await _customerRepository.FindAsync(c => c.Email == request.Email);
-            if (customerWithSameEmail.Any(c => c.Id != id))
+            // Check if another customer with the same email exists (only if email is provided)
+            if (!string.IsNullOrEmpty(request.Email))
             {
-                return new BaseResponse
+                var customerWithSameEmail = await _customerRepository.FindAsync(c => c.Email == request.Email);
+                if (customerWithSameEmail.Any(c => c.Id != id))
                 {
-                    Success = false,
-                    ErrorMessage = "Another customer with this email already exists"
-                };
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Another customer with this email already exists"
+                    };
+                }
+                existingCustomer.Email = request.Email;
             }
 
-            _mapper.Map(request, existingCustomer);
+            // Update only provided fields
+            if (!string.IsNullOrEmpty(request.FirstName))
+                existingCustomer.FirstName = request.FirstName;
+            
+            if (!string.IsNullOrEmpty(request.LastName))
+                existingCustomer.LastName = request.LastName;
+            
+            if (request.Age.HasValue)
+                existingCustomer.Age = request.Age.Value;
+            
+            if (!string.IsNullOrEmpty(request.PhoneNumber))
+                existingCustomer.PhoneNumber = request.PhoneNumber;
+
             await _customerRepository.UpdateAsync(existingCustomer);
 
             return new BaseResponse { Success = true };

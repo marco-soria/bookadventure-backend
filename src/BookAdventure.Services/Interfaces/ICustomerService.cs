@@ -10,7 +10,7 @@ public interface ICustomerService : IBaseService<Customer>
     Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> GetAsync(PaginationDto pagination);
     Task<BaseResponseGeneric<CustomerResponseDto>> GetAsync(int id);
     Task<BaseResponseGeneric<int>> AddAsync(CustomerRequestDto request);
-    Task<BaseResponse> UpdateAsync(int id, CustomerRequestDto request);
+    Task<BaseResponse> UpdateAsync(int id, CustomerUpdateRequestDto request);
     Task<BaseResponse> DeleteAsync(int id);
     Task<BaseResponseGeneric<CustomerResponseDto>> GetByDniAsync(string dni);
     Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> SearchByNameAsync(string namePattern);

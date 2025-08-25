@@ -45,15 +45,23 @@ Content-Type: {{contentType}}
     "description": "Libros biográficos y autobiográficos"
 }
 
-### Update genre
+### Update genre (all fields)
 PUT {{baseUrl}}/api/genres/1
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
 {
-    "id": 1,
     "name": "Ficción Actualizada",
-    "description": "Género de ficción actualizado"
+    "status": true
+}
+
+### Update genre (partial - only name)
+PUT {{baseUrl}}/api/genres/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "name": "Ficción Moderna"
 }
 
 ###################################
@@ -124,21 +132,39 @@ Content-Type: {{contentType}}
     "isAvailable": true
 }
 
-### Update book
+### Update book (all fields)
 PUT {{baseUrl}}/api/books/1
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
 {
-    "id": 1,
     "title": "Cien Años de Soledad - Edición Especial",
     "author": "Gabriel García Márquez",
     "isbn": "978-0060883287",
-    "publicationDate": "1967-06-05",
-    "price": 22.99,
+    "description": "Una obra maestra de la literatura latinoamericana",
+    "stock": 10,
     "genreId": 1,
     "imageUrl": "https://example.com/cien-anos.jpg",
     "isAvailable": true
+}
+
+### Update book (partial - only title)
+PUT {{baseUrl}}/api/books/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "title": "Cien Años de Soledad - Nueva Edición"
+}
+
+### Update book (partial - title and stock)
+PUT {{baseUrl}}/api/books/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "title": "Cien Años de Soledad - Edición Limitada",
+    "stock": 5
 }
 
 ### Search available books
@@ -170,18 +196,37 @@ Content-Type: {{contentType}}
     "address": "Calle Principal 123"
 }
 
-### Update customer
+### Update customer (all fields)
 PUT {{baseUrl}}/api/customers/1
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
 {
-    "id": 1,
     "firstName": "Juan Carlos",
     "lastName": "Pérez González",
     "email": "juan.perez@email.com",
-    "phone": "+1234567890",
-    "address": "Av. Principal 456"
+    "dni": "12345678",
+    "age": 35,
+    "phoneNumber": "+1234567890"
+}
+
+### Update customer (partial - only email)
+PUT {{baseUrl}}/api/customers/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "email": "juan.carlos.perez@email.com"
+}
+
+### Update customer (partial - name and phone)
+PUT {{baseUrl}}/api/customers/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "firstName": "Juan Carlos",
+    "phoneNumber": "+1987654321"
 }
 
 ###################################
@@ -220,26 +265,33 @@ Content-Type: {{contentType}}
     ]
 }
 
-### Update rental order (mark as returned)
+### Update rental order (all fields)
 PUT {{baseUrl}}/api/rental-orders/1
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
 {
-    "id": 1,
     "customerId": 1,
-    "rentalDate": "2025-01-25T10:00:00Z",
-    "details": [
-        {
-            "id": 1,
-            "bookId": 1,
-            "quantity": 1,
-            "unitPrice": 5.99,
-            "dueDate": "2025-02-08T10:00:00Z",
-            "returnDate": "2025-01-26T15:30:00Z",
-            "isReturned": true
-        }
-    ]
+    "dueDate": "2025-02-15T10:00:00Z",
+    "notes": "Extensión de fecha de entrega solicitada por el cliente"
+}
+
+### Update rental order (partial - only due date)
+PUT {{baseUrl}}/api/rental-orders/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "dueDate": "2025-02-20T10:00:00Z"
+}
+
+### Update rental order (partial - only notes)
+PUT {{baseUrl}}/api/rental-orders/1
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+    "notes": "Cliente contactado - fecha confirmada"
 }
 
 ### Get overdue rentals

@@ -50,7 +50,7 @@ public class BooksController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Put(int id, [FromBody] BookRequestDto request)
+    public async Task<IActionResult> Put(int id, [FromBody] BookUpdateRequestDto request)
     {
         var response = await _bookService.UpdateAsync(id, request);
         return response.Success ? Ok(response) : BadRequest(response);

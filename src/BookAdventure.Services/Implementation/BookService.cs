@@ -154,7 +154,7 @@ public class BookService : IBookService
         }
     }
 
-    public async Task<BaseResponse> UpdateAsync(int id, BookRequestDto request)
+    public async Task<BaseResponse> UpdateAsync(int id, BookUpdateRequestDto request)
     {
         try
         {
@@ -168,19 +168,44 @@ public class BookService : IBookService
                 };
             }
 
-            // Validate genre exists
-            var genre = await _genreRepository.GetByIdAsync(request.GenreId);
-            if (genre == null)
+            // Validate genre exists if provided
+            if (request.GenreId.HasValue)
             {
-                return new BaseResponse
+                var genre = await _genreRepository.GetByIdAsync(request.GenreId.Value);
+                if (genre == null)
                 {
-                    Success = false,
-                    ErrorMessage = "Genre not found"
-                };
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Genre not found"
+                    };
+                }
+                existingBook.GenreId = request.GenreId.Value;
             }
 
-            _mapper.Map(request, existingBook);
-            existingBook.IsAvailable = existingBook.Stock > 0;
+            // Update only provided fields
+            if (!string.IsNullOrEmpty(request.Title))
+                existingBook.Title = request.Title;
+            
+            if (!string.IsNullOrEmpty(request.Author))
+                existingBook.Author = request.Author;
+            
+            if (!string.IsNullOrEmpty(request.ISBN))
+                existingBook.ISBN = request.ISBN;
+            
+            if (!string.IsNullOrEmpty(request.Description))
+                existingBook.Description = request.Description;
+            
+            if (request.Stock.HasValue)
+                existingBook.Stock = request.Stock.Value;
+            
+            if (!string.IsNullOrEmpty(request.ImageUrl))
+                existingBook.ImageUrl = request.ImageUrl;
+            
+            if (request.IsAvailable.HasValue)
+                existingBook.IsAvailable = request.IsAvailable.Value;
+            else if (request.Stock.HasValue)
+                existingBook.IsAvailable = existingBook.Stock > 0;
             
             await _bookRepository.UpdateAsync(existingBook);
 

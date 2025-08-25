@@ -141,7 +141,7 @@ public class GenreService : IGenreService
         }
     }
 
-    public async Task<BaseResponse> UpdateAsync(int id, GenreRequestDto request)
+    public async Task<BaseResponse> UpdateAsync(int id, GenreUpdateRequestDto request)
     {
         try
         {
@@ -155,20 +155,27 @@ public class GenreService : IGenreService
                 };
             }
 
-            // Check if another genre with the same name exists
-            var genreWithSameName = await _genreRepository.GetByNameAsync(request.Name);
-            if (genreWithSameName != null && genreWithSameName.Id != id)
+            // Check if another genre with the same name exists (only if name is provided)
+            if (!string.IsNullOrEmpty(request.Name))
             {
-                return new BaseResponse
+                var genreWithSameName = await _genreRepository.GetByNameAsync(request.Name);
+                if (genreWithSameName != null && genreWithSameName.Id != id)
                 {
-                    Success = false,
-                    ErrorMessage = "Another genre with this name already exists"
-                };
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Another genre with this name already exists"
+                    };
+                }
+                existingGenre.Name = request.Name;
             }
 
-            // Manual mapping to avoid AutoMapper issues
-            existingGenre.Name = request.Name;
-            existingGenre.Status = request.Status ? EntityStatus.Active : EntityStatus.Inactive;
+            // Update status only if provided
+            if (request.Status.HasValue)
+            {
+                existingGenre.Status = request.Status.Value ? EntityStatus.Active : EntityStatus.Inactive;
+            }
+
             existingGenre.UpdatedAt = DateTime.UtcNow;
             
             await _genreRepository.UpdateAsync(existingGenre);

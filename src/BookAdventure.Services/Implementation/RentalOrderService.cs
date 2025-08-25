@@ -187,7 +187,7 @@ public class RentalOrderService : IRentalOrderService
         }
     }
 
-    public async Task<BaseResponse> UpdateAsync(int id, RentalOrderRequestDto request)
+    public async Task<BaseResponse> UpdateAsync(int id, RentalOrderUpdateRequestDto request)
     {
         try
         {
@@ -204,8 +204,27 @@ public class RentalOrderService : IRentalOrderService
             // Only allow updating certain fields for active orders
             if (existingRentalOrder.OrderStatus == OrderStatus.Active)
             {
-                existingRentalOrder.DueDate = request.DueDate;
-                existingRentalOrder.Notes = request.Notes;
+                // Update only provided fields
+                if (request.CustomerId.HasValue)
+                {
+                    // Validate customer exists
+                    var customer = await _customerRepository.GetByIdAsync(request.CustomerId.Value);
+                    if (customer == null)
+                    {
+                        return new BaseResponse
+                        {
+                            Success = false,
+                            ErrorMessage = "Customer not found"
+                        };
+                    }
+                    existingRentalOrder.CustomerId = request.CustomerId.Value;
+                }
+
+                if (request.DueDate.HasValue)
+                    existingRentalOrder.DueDate = request.DueDate.Value;
+                
+                if (request.Notes != null)
+                    existingRentalOrder.Notes = request.Notes;
                 
                 await _rentalOrderRepository.UpdateAsync(existingRentalOrder);
 

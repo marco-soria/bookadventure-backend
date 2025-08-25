@@ -41,7 +41,7 @@ public class GenresController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Put(int id, [FromBody] GenreRequestDto request)
+    public async Task<IActionResult> Put(int id, [FromBody] GenreUpdateRequestDto request)
     {
         var response = await _genreService.UpdateAsync(id, request);
         return response.Success ? Ok(response) : BadRequest(response);

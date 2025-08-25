@@ -47,7 +47,7 @@ public class CustomersController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Put(int id, [FromBody] CustomerRequestDto request)
+    public async Task<IActionResult> Put(int id, [FromBody] CustomerUpdateRequestDto request)
     {
         var response = await _customerService.UpdateAsync(id, request);
         return response.Success ? Ok(response) : BadRequest(response);

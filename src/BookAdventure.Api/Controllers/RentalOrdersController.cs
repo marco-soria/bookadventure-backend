@@ -47,7 +47,7 @@ public class RentalOrdersController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Put(int id, [FromBody] RentalOrderRequestDto request)
+    public async Task<IActionResult> Put(int id, [FromBody] RentalOrderUpdateRequestDto request)
     {
         var response = await _rentalOrderService.UpdateAsync(id, request);
         return response.Success ? Ok(response) : BadRequest(response);
