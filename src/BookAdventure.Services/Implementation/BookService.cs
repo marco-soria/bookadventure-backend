@@ -335,6 +335,189 @@ public class BookService : IBookService
         }
     }
 
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> GetByGenreNameAsync(string genreName, PaginationDto pagination)
+    {
+        try
+        {
+            // First, find the genre by name
+            var genre = await _genreRepository.GetByNameAsync(genreName);
+            if (genre == null)
+            {
+                return new BaseResponseGeneric<List<BookResponseDto>>
+                {
+                    Success = false,
+                    ErrorMessage = $"Genre '{genreName}' not found"
+                };
+            }
+
+            var books = await _bookRepository.Query()
+                .Where(b => b.GenreId == genre.Id)
+                .Include(b => b.Genre)
+                .Paginate(pagination)
+                .ToListAsync();
+
+            var totalRecords = await _bookRepository.Query()
+                .Where(b => b.GenreId == genre.Id)
+                .CountAsync();
+
+            // Manual mapping to avoid AutoMapper issues
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
+
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving books by genre name: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> GetBooksWithFiltersAsync(BookSearchDto searchFilters)
+    {
+        try
+        {
+            var query = _bookRepository.Query()
+                .Include(b => b.Genre)
+                .Where(b => b.Status == EntityStatus.Active);
+
+            // Apply filters
+            if (searchFilters.GenreId.HasValue)
+            {
+                query = query.Where(b => b.GenreId == searchFilters.GenreId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchFilters.Author))
+            {
+                query = query.Where(b => b.Author.ToLower().Contains(searchFilters.Author.ToLower()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchFilters.Search))
+            {
+                query = query.Where(b => 
+                    b.Title.ToLower().Contains(searchFilters.Search.ToLower()) ||
+                    b.Author.ToLower().Contains(searchFilters.Search.ToLower()) ||
+                    (b.Description != null && b.Description.ToLower().Contains(searchFilters.Search.ToLower())));
+            }
+
+            if (searchFilters.InStock.HasValue)
+            {
+                if (searchFilters.InStock.Value)
+                {
+                    query = query.Where(b => b.Stock > 0);
+                }
+                else
+                {
+                    query = query.Where(b => b.Stock == 0);
+                }
+            }
+
+            // Apply sorting
+            if (!string.IsNullOrWhiteSpace(searchFilters.SortBy))
+            {
+                switch (searchFilters.SortBy.ToLower())
+                {
+                    case "title":
+                        query = searchFilters.SortDescending 
+                            ? query.OrderByDescending(b => b.Title)
+                            : query.OrderBy(b => b.Title);
+                        break;
+                    case "author":
+                        query = searchFilters.SortDescending 
+                            ? query.OrderByDescending(b => b.Author)
+                            : query.OrderBy(b => b.Author);
+                        break;
+                    case "genre":
+                        query = searchFilters.SortDescending 
+                            ? query.OrderByDescending(b => b.Genre.Name)
+                            : query.OrderBy(b => b.Genre.Name);
+                        break;
+                    case "stock":
+                        query = searchFilters.SortDescending 
+                            ? query.OrderByDescending(b => b.Stock)
+                            : query.OrderBy(b => b.Stock);
+                        break;
+                    case "createdat":
+                        query = searchFilters.SortDescending 
+                            ? query.OrderByDescending(b => b.CreatedAt)
+                            : query.OrderBy(b => b.CreatedAt);
+                        break;
+                    default:
+                        // Default sort by title alphabetically
+                        query = query.OrderBy(b => b.Title);
+                        break;
+                }
+            }
+            else
+            {
+                // Default sort by title alphabetically
+                query = query.OrderBy(b => b.Title);
+            }
+
+            // Get total count before pagination
+            var totalRecords = await query.CountAsync();
+
+            // Apply pagination
+            var books = await query
+                .Skip((searchFilters.Page - 1) * searchFilters.RecordsPerPage)
+                .Take(searchFilters.RecordsPerPage)
+                .ToListAsync();
+
+            // Manual mapping to avoid AutoMapper issues
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
+
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving books with filters: {ex.Message}"
+            };
+        }
+    }
+
     // Base service implementations
     public async Task<IEnumerable<Book>> GetAllAsync() => await _bookRepository.GetAllAsync();
     public async Task<IEnumerable<Book>> GetAllIncludingDeletedAsync() => await _bookRepository.GetAllIncludingDeletedAsync();

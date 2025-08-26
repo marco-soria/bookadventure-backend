@@ -14,4 +14,6 @@ public interface IBookService : IBaseService<Book>
     Task<BaseResponse> DeleteAsync(int id);
     Task<BaseResponseGeneric<List<BookResponseDto>>> SearchAsync(string title);
     Task<BaseResponseGeneric<List<BookResponseDto>>> GetByGenreAsync(int genreId, PaginationDto pagination);
+    Task<BaseResponseGeneric<List<BookResponseDto>>> GetByGenreNameAsync(string genreName, PaginationDto pagination);
+    Task<BaseResponseGeneric<List<BookResponseDto>>> GetBooksWithFiltersAsync(BookSearchDto searchFilters);
 }
