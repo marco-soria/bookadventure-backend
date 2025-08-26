@@ -54,7 +54,7 @@ public class RentalOrdersController : ControllerBase
         {
             CustomerId = request.CustomerId,
             DueDate = DateTime.UtcNow.AddDays(request.RentalDays),
-            Notes = request.Notes,
+            Notes = request.OrderNotes,
             Details = new List<RentalOrderDetailRequestDto>
             {
                 new()
@@ -62,7 +62,7 @@ public class RentalOrdersController : ControllerBase
                     BookId = request.BookId,
                     Quantity = 1,
                     RentalDays = request.RentalDays,
-                    Notes = request.BookNotes
+                    Notes = request.Notes
                 }
             }
         };

@@ -14,9 +14,9 @@ public class SingleBookRentalRequestDto
     [Range(1, 365, ErrorMessage = "Rental days must be between 1 and 365")]
     public int RentalDays { get; set; }
     
-    [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
-    public string? Notes { get; set; }
+    [StringLength(500, ErrorMessage = "Order notes cannot exceed 500 characters")]
+    public string? OrderNotes { get; set; }
     
     [StringLength(200, ErrorMessage = "Book notes cannot exceed 200 characters")]
-    public string? BookNotes { get; set; }
+    public string? Notes { get; set; }
 }
