@@ -1,231 +1,322 @@
-# BookAdventure - Sistema de Gestión de Biblioteca
+# 📚 BookAdventure - Library Management System API
 
-Sistema completo de gestión de biblioteca desarrollado con **.NET 9** y **Entity Framework Core**, implementando una arquitectura en capas con patrones Repository y Service.
+A comprehensive library management system backend built with **.NET 9** and **Entity Framework Core**, implementing a layered architecture with Repository and Service patterns. Ready for frontend integration with Angular, React, or any SPA framework.
 
-## 🏗️ Arquitectura del Proyecto
+## 🏗️ Project Architecture
 
-### Estructura de Capas
+### Layered Structure
 
 ```
 BookAdventure/
 ├── src/
-│   ├── BookAdventure.Api/          # 🌐 Capa de Presentación (Controllers)
-│   ├── BookAdventure.Services/     # 💼 Capa de Lógica de Negocio
-│   ├── BookAdventure.Repositories/ # 🗃️ Capa de Acceso a Datos
-│   ├── BookAdventure.Persistence/  # 🗄️ Contexto de Base de Datos
-│   ├── BookAdventure.Entities/     # 📋 Modelos de Dominio
-│   └── BookAdventure.Dto/          # 📦 Objetos de Transferencia de Datos
+│   ├── BookAdventure.Api/          # 🌐 Presentation Layer (Controllers)
+│   ├── BookAdventure.Services/     # 💼 Business Logic Layer
+│   ├── BookAdventure.Repositories/ # 🗃️ Data Access Layer
+│   ├── BookAdventure.Persistence/  # 🗄️ Database Context
+│   ├── BookAdventure.Entities/     # 📋 Domain Models
+│   └── BookAdventure.Dto/          # 📦 Data Transfer Objects
 ```
 
-## ✨ Funcionalidades Implementadas
+## ✨ Implemented Features
 
-### 🔐 Autenticación y Autorización
+### 🔐 Authentication & Authorization
 
-- ✅ JWT Token Authentication
-- ✅ Identity Framework con roles
-- ✅ Registro y login de usuarios
-- ✅ Recuperación de contraseña
+- ✅ JWT Token Authentication with Bearer scheme
+- ✅ ASP.NET Identity Framework with role-based access
+- ✅ User registration with automatic customer profile creation
+- ✅ Login with secure password hashing
+- ✅ Swagger UI with JWT integration for testing
 
-### 📚 Gestión de Libros
+### 📚 Book Management
 
-- ✅ CRUD completo de libros
-- ✅ Control de disponibilidad (`IsAvailable`)
-- ✅ Búsqueda y filtrado
-- ✅ Paginación
-- ✅ Subida de imágenes
+- ✅ Complete CRUD operations for books
+- ✅ Stock control and availability tracking
+- ✅ Book search and filtering capabilities
+- ✅ Pagination support for large datasets
+- ✅ Genre categorization
+- ✅ Image URL support for book covers
 
-### 🏷️ Gestión de Géneros
+### 🏷️ Genre Management
 
-- ✅ CRUD completo de géneros
-- ✅ Validaciones
-- ✅ Soft delete
+- ✅ Complete CRUD operations for book genres
+- ✅ Input validation and business rules
+- ✅ Soft delete functionality
 
-### 👥 Gestión de Clientes
+### 👥 Customer Management
 
-- ✅ CRUD completo de clientes
-- ✅ Métricas de alquiler (total, activos, vencidos)
-- ✅ Perfil completo con AutoMapper
+- ✅ Complete CRUD operations for customers
+- ✅ Automatic customer creation on user registration
+- ✅ Rental metrics (total books, active rentals, overdue items)
+- ✅ Customer profile with full details
+- ✅ Integration with user authentication system
 
-### 📋 Sistema de Alquiler
+### 📋 Rental System
 
-- ✅ Creación de órdenes de alquiler
-- ✅ Gestión de detalles de alquiler
-- ✅ Fechas de vencimiento (`DueDate`)
-- ✅ Control de devoluciones (`IsReturned`, `ReturnDate`)
-- ✅ Reportes de alquileres
+- ✅ **Smart rental order creation** with stock validation
+- ✅ **Partial order support** - create orders with available books only
+- ✅ **Individual book rental** for single-item transactions
+- ✅ **Due date management** with automatic calculation
+- ✅ **Return tracking** with dates and status
+- ✅ **Overdue rental reports** for library management
+- ✅ **Stock restoration** on book returns
 
-## 🛠️ Tecnologías Utilizadas
+### 🎯 Advanced Rental Features
 
-- **.NET 9** - Framework principal
-- **ASP.NET Core Web API** - API REST
-- **Entity Framework Core** - ORM
-- **SQL Server** - Base de datos
-- **AutoMapper** - Mapeo objeto-objeto
-- **JWT Bearer** - Autenticación
-- **Identity Framework** - Gestión de usuarios
-- **Serilog** - Logging
+- **Flexible ordering**: Choose strict mode (all-or-nothing) or partial orders
+- **Real-time stock validation**: Prevents over-booking of books
+- **Detailed responses**: Know exactly which books are available/unavailable
+- **HTTP status codes**: 201 (success), 206 (partial), 400 (failed)
 
-## 🗄️ Base de Datos
+## 🛠️ Technology Stack
 
-### Entidades Principales
+- **.NET 9** - Latest framework with performance improvements
+- **ASP.NET Core Web API** - RESTful API development
+- **Entity Framework Core** - Modern ORM with migrations
+- **SQL Server** - Robust relational database
+- **AutoMapper** - Object-to-object mapping
+- **JWT Bearer** - Stateless authentication
+- **ASP.NET Identity** - User management framework
+- **Serilog** - Structured logging
+- **Swagger/OpenAPI** - API documentation
+
+## 🗄️ Database Schema
+
+### Core Entities
 
 #### 📖 Book
 
 ```csharp
 - Id, Title, Author, ISBN
-- PublicationDate, Price
-- IsAvailable (nuevo) ✨
-- GenreId, ImageUrl
+- Description, Stock, IsAvailable
+- GenreId (FK), ImageUrl
+- CreatedAt, UpdatedAt, Status
+```
+
+#### 👤 Customer
+
+```csharp
+- Id, FullName, Email, DNI
+- Phone, Address, UserId (FK)
+- CreatedAt, UpdatedAt, Status
 ```
 
 #### 📋 RentalOrder
 
 ```csharp
-- Id, CustomerId, RentalDate
-- TotalPrice, Status
-- RentalOrderDetails (colección)
+- Id, CustomerId (FK), OrderNumber
+- OrderDate, DueDate, ReturnDate
+- OrderStatus, Notes
+- RentalOrderDetails (Collection)
 ```
 
 #### 📝 RentalOrderDetail
 
 ```csharp
-- Id, RentalOrderId, BookId
-- Quantity, UnitPrice, TotalPrice
-- DueDate (nuevo) ✨
-- ReturnDate (nuevo) ✨
-- IsReturned (nuevo) ✨
+- Id, RentalOrderId (FK), BookId (FK)
+- Quantity, RentalDays, DueDate
+- ReturnDate, IsReturned, Notes
 ```
 
-## 🚀 Endpoints Implementados
+## 🚀 API Endpoints
 
 ### 📚 Books API
 
-- `GET /api/books` - Listar libros (con paginación)
-- `GET /api/books/{id}` - Obtener libro por ID
-- `POST /api/books` - Crear libro
-- `PUT /api/books/{id}` - Actualizar libro
-- `DELETE /api/books/{id}` - Eliminar libro (soft delete)
+```
+GET    /api/books              # List books with pagination
+GET    /api/books/{id}         # Get book details
+POST   /api/books              # Create new book
+PUT    /api/books/{id}         # Update book
+DELETE /api/books/{id}         # Soft delete book
+```
 
 ### 🏷️ Genres API
 
-- `GET /api/genres` - Listar géneros
-- `GET /api/genres/{id}` - Obtener género por ID
-- `POST /api/genres` - Crear género
-- `PUT /api/genres/{id}` - Actualizar género
-- `DELETE /api/genres/{id}` - Eliminar género
+```
+GET    /api/genres             # List all genres
+GET    /api/genres/{id}        # Get genre details
+POST   /api/genres             # Create new genre
+PUT    /api/genres/{id}        # Update genre
+DELETE /api/genres/{id}        # Soft delete genre
+```
 
 ### 👥 Customers API
 
-- `GET /api/customers` - Listar clientes
-- `GET /api/customers/{id}` - Obtener cliente por ID
-- `POST /api/customers` - Crear cliente
-- `PUT /api/customers/{id}` - Actualizar cliente
-- `DELETE /api/customers/{id}` - Eliminar cliente
+```
+GET    /api/customers          # List customers with metrics
+GET    /api/customers/{id}     # Get customer details
+PUT    /api/customers/{id}     # Update customer
+DELETE /api/customers/{id}     # Soft delete customer
+GET    /api/customers/{dni}/rented-books  # Get rented books by DNI
+```
 
 ### 📋 Rental Orders API
 
-- `GET /api/rental-orders` - Listar órdenes
-- `GET /api/rental-orders/{id}` - Obtener orden por ID
-- `POST /api/rental-orders` - Crear orden
-- `PUT /api/rental-orders/{id}` - Actualizar orden
-- `DELETE /api/rental-orders/{id}` - Eliminar orden
+```
+GET    /api/rentalorders                    # List rental orders
+GET    /api/rentalorders/{id}              # Get order details
+POST   /api/rentalorders                   # Create rental order
+POST   /api/rentalorders/rent-single-book  # Rent single book
+PUT    /api/rentalorders/{id}              # Update order
+DELETE /api/rentalorders/{id}              # Cancel order
+POST   /api/rentalorders/{id}/return       # Return specific books
+GET    /api/rentalorders/overdue           # Get overdue rentals
+```
 
 ### 🔐 Users API
 
-- `POST /api/users/register` - Registrar usuario
-- `POST /api/users/login` - Iniciar sesión
-- `POST /api/users/reset-password` - Solicitar reset
-- `POST /api/users/new-password` - Nueva contraseña
+```
+POST   /api/users/register    # Register new user (creates customer)
+POST   /api/users/login       # User authentication
+GET    /api/users/profile     # Get user profile [Requires JWT]
+```
 
-## 🏃‍♂️ Cómo Ejecutar
+### ⚕️ Health Checks
 
-1. **Clonar el repositorio**
+```
+GET    /healthcheck           # API health status
+```
+
+## 🏃‍♂️ Getting Started
+
+### 1. **Clone the Repository**
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/marco-soria/bookadventure-backend.git
 cd BookAdventure
 ```
 
-2. **Configurar la base de datos**
+### 2. **Configure Database**
 
-```bash
-# Actualizar cadena de conexión en appsettings.json
-# Aplicar migraciones
-dotnet ef database update --project src/BookAdventure.Persistence
-```
-
-3. **Ejecutar la aplicación**
-
-```bash
-dotnet run --project src/BookAdventure.Api/BookAdventure.Api.csproj
-```
-
-4. **Acceder a la API**
-
-- API: `https://localhost:7260`
-- Swagger: `https://localhost:7260/swagger`
-
-## 📊 Características Técnicas
-
-### 🔧 Patrones Implementados
-
-- **Repository Pattern** - Abstracción de acceso a datos
-- **Service Layer** - Lógica de negocio centralizada
-- **DTO Pattern** - Transferencia de datos optimizada
-- **Dependency Injection** - Inversión de dependencias
-- **Unit of Work** - Gestión de transacciones
-
-### 📈 Funcionalidades Avanzadas
-
-- **Paginación** automática en listados
-- **Soft Delete** en todas las entidades
-- **AutoMapper** para mapeo automático
-- **Logging** estructurado con Serilog
-- **Validaciones** personalizadas
-- **Filtros de excepción** globales
-- **Seeding** automático de datos
-
-## 🧪 Datos de Prueba
-
-Al ejecutar la aplicación por primera vez, se crearán automáticamente:
-
-- ✅ Roles de usuario (Admin, Customer)
-- ✅ Usuario administrador
-- ✅ Géneros literarios
-- ✅ Libros de muestra
-- ✅ Clientes de prueba
-- ✅ Órdenes de alquiler
-
-## 🔧 Configuración
-
-### appsettings.json
+Update `appsettings.json` with your SQL Server connection:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=...;Database=BookAdventureDb;..."
-  },
-  "JwtSettings": {
-    "SecretKey": "your-secret-key",
-    "Issuer": "BookAdventure",
-    "Audience": "BookAdventure"
+    "DefaultConnection": "Server=localhost;Database=BookAdventureDb;Trusted_Connection=true;TrustServerCertificate=true;"
   }
 }
 ```
 
-## 🎯 Estado del Proyecto
+### 3. **Apply Migrations**
 
-✅ **COMPLETADO** - Proyecto totalmente funcional con:
+```bash
+dotnet ef database update --project src/BookAdventure.Persistence
+```
 
-- Arquitectura en capas implementada
-- Todos los controllers, services y repositories
-- Base de datos migrada y funcionando
-- API REST completa
-- Autenticación JWT
-- Seeding de datos
-- Documentación completa
+### 4. **Run the Application**
+
+```bash
+dotnet run --project src/BookAdventure.Api
+```
+
+### 5. **Access the API**
+
+- **API Base URL**: `https://localhost:7260`
+- **Swagger Documentation**: `https://localhost:7260/swagger`
+- **Health Check**: `https://localhost:7260/healthcheck`
+
+## 📊 Technical Features
+
+### 🔧 Design Patterns
+
+- **Repository Pattern** - Data access abstraction
+- **Service Layer Pattern** - Business logic separation
+- **DTO Pattern** - Optimized data transfer
+- **Dependency Injection** - Loose coupling
+- **Factory Pattern** - Object creation abstraction
+
+### 📈 Advanced Features
+
+- **Automatic pagination** on all list endpoints
+- **Soft delete** on all entities
+- **AutoMapper profiles** for clean object mapping
+- **Structured logging** with Serilog
+- **Global exception handling** with custom filters
+- **Automatic data seeding** on first run
+- **CORS configuration** for frontend integration
+- **Request/Response DTOs** for API contracts
+
+## 🧪 Sample Data
+
+On first run, the application automatically seeds:
+
+- ✅ User roles (Admin, User)
+- ✅ Admin user account
+- ✅ Book genres (Fiction, Non-Fiction, etc.)
+- ✅ Sample books with stock
+- ✅ Test customers with user accounts
+- ✅ Sample rental orders with different statuses
+
+### Default Admin Account
+
+```
+Email: admin@bookadventure.com
+Password: Admin123!
+```
+
+## 🔧 Configuration
+
+### JWT Settings
+
+```json
+{
+  "JWT": {
+    "JWTKey": "your-super-secret-key-here-at-least-256-bits",
+    "LifetimeInSeconds": 86400
+  }
+}
+```
+
+### CORS Configuration
+
+The API is configured to accept requests from any origin during development. Update CORS policy for production use.
+
+## 🎯 Project Status
+
+✅ **PRODUCTION READY** - Complete API backend featuring:
+
+- ✅ Layered architecture implemented
+- ✅ All controllers, services, and repositories
+- ✅ Database migrations and seeding
+- ✅ Complete RESTful API
+- ✅ JWT authentication with Swagger integration
+- ✅ Comprehensive error handling
+- ✅ Stock management and validation
+- ✅ Partial order support
+- ✅ Health monitoring
+- ✅ Structured logging
+
+## 🌐 Frontend Integration
+
+This backend is designed to work with modern frontend frameworks:
+
+### Recommended Frontend Stack
+
+- **Angular** - Full-featured SPA framework
+- **React** - Component-based library
+- **Vue.js** - Progressive framework
+
+### API Integration Points
+
+- Use `/api/users/login` to get JWT token
+- Include `Authorization: Bearer {token}` header for protected endpoints
+- Handle 201, 206, and 400 status codes for rental operations
+- Implement pagination using query parameters
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Follow the existing code patterns
+4. Add tests for new features
+5. Submit a pull request
+
+## 📄 License
+
+This project is for educational and portfolio purposes.
 
 ---
 
-**Autor**: Desarrollado con .NET 9 y Entity Framework Core
-**Fecha**: Enero 2025
+**Author**: Marco Soria  
+**Built with**: .NET 9, Entity Framework Core, SQL Server  
+**Date**: August 2025
