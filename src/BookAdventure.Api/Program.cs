@@ -147,25 +147,64 @@ try
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
+    //JWT Authentication
+    var jwtKey = builder.Configuration["JWT:JWTKey"];
+    if (string.IsNullOrEmpty(jwtKey))
+    {
+        throw new InvalidOperationException("JWT:JWTKey is not configured in appsettings.json");
+    }
+
+    var jwtLifetimeConfig = builder.Configuration["JWT:LifetimeInSeconds"];
+    if (string.IsNullOrEmpty(jwtLifetimeConfig) || !int.TryParse(jwtLifetimeConfig, out var jwtLifetime))
+    {
+        throw new InvalidOperationException("JWT:LifetimeInSeconds is not configured or invalid in appsettings.json");
+    }
+
+    logger.Information("JWT Configuration validated successfully");
+
     builder.Services.AddAuthentication(x =>
     {
         x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     }).AddJwtBearer(x =>
     {
-        var key = Encoding.UTF8.GetBytes(builder.Configuration["JWT:JWTKey"] ??
-                                         throw new InvalidOperationException("JWT key not configured"));
+        var key = Encoding.UTF8.GetBytes(jwtKey);
         x.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+            ValidateIssuer = false, // Not using issuer validation for simplicity
+            ValidateAudience = false, // Not using audience validation for simplicity
+            ValidateLifetime = true, // Always validate token expiration
+            ValidateIssuerSigningKey = true, // Always validate signing key
             IssuerSigningKey = new SymmetricSecurityKey(key),
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero // No tolerance for clock differences
+        };
+        
+        // Optional: Add events for debugging JWT issues
+        x.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                logger.Warning("JWT Authentication failed: {Error}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                logger.Information("JWT Token validated successfully for user: {User}", 
+                    context.Principal?.Identity?.Name ?? "Unknown");
+                return Task.CompletedTask;
+            }
         };
     });
-    builder.Services.AddAuthorization();
+
+    builder.Services.AddAuthorization(options =>
+    {
+        // Add custom authorization policies if needed
+        options.AddPolicy("RequireAdminRole", policy =>
+            policy.RequireRole("Admin"));
+        
+        options.AddPolicy("RequireUserRole", policy =>
+            policy.RequireRole("User"));
+    });
 
     builder.Services.AddAutoMapper(config =>
     {

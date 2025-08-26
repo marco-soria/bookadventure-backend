@@ -42,17 +42,18 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile([FromQuery] string? userId = null)
+    //[Authorize] // Test JWT authentication
+    public async Task<IActionResult> GetProfile()
     {
-        // Try to get userId from query parameter first, then from token
-        var targetUserId = userId ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Get userId from authenticated token
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
-        if (string.IsNullOrEmpty(targetUserId))
+        if (string.IsNullOrEmpty(userId))
         {
-            return BadRequest("User ID is required. Provide userId parameter or login first.");
+            return BadRequest("Invalid token: User ID not found in claims.");
         }
 
-        var response = await _customerService.GetByUserIdAsync(targetUserId);
+        var response = await _customerService.GetByUserIdAsync(userId);
         return response.Success ? Ok(response) : NotFound(response);
     }
 }

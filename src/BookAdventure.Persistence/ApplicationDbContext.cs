@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using BookAdventure.Entities;
-using BookAdventure.Entities.Info;
 using BookAdventure.Persistence.Extensions;
 using System.Linq.Expressions;
 
@@ -32,10 +31,6 @@ public class ApplicationDbContext : IdentityDbContext<BookAdventureUserIdentity>
         
         // Configure soft delete filters and audit properties
         ConfigureSoftDeleteFilters(modelBuilder);
-        
-        // Ignore Info entities (if they are not database entities)
-        modelBuilder.Ignore<BookInfo>();
-        modelBuilder.Ignore<ReportInfo>();
         
         // Identity table configurations
         modelBuilder.Entity<BookAdventureUserIdentity>(x => x.ToTable("User", "Identity"));
