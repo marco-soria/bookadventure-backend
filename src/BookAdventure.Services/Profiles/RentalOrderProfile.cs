@@ -14,12 +14,13 @@ public class RentalOrderProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.OrderNumber, opt => opt.Ignore()) // Generated automatically
             .ForMember(dest => dest.OrderDate, opt => opt.Ignore()) // Set automatically
+            .ForMember(dest => dest.DueDate, opt => opt.Ignore()) // Calculated from RentalDays
             .ForMember(dest => dest.OrderStatus, opt => opt.Ignore()) // Set to default
             .ForMember(dest => dest.Status, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())            
             .ForMember(dest => dest.Customer, opt => opt.Ignore())
-            .ForMember(dest => dest.RentalOrderDetails, opt => opt.MapFrom(src => src.Details));
+            .ForMember(dest => dest.RentalOrderDetails, opt => opt.Ignore()); // Handled manually in service
             
         // Entity to Response
         CreateMap<RentalOrder, RentalOrderResponseDto>()
@@ -32,19 +33,6 @@ public class RentalOrderProfile : Profile
             .ForMember(dest => dest.ActiveBooks, opt => opt.MapFrom(src => src.RentalOrderDetails.Where(d => !d.IsReturned).Sum(d => d.Quantity)))
             .ForMember(dest => dest.ReturnedBooks, opt => opt.MapFrom(src => src.RentalOrderDetails.Where(d => d.IsReturned).Sum(d => d.Quantity)))
             .ForMember(dest => dest.HasOverdueBooks, opt => opt.MapFrom(src => src.RentalOrderDetails.Any(d => !d.IsReturned && d.DueDate < DateTime.Now)));
-
-        // RentalOrderDetailRequestDto to RentalOrderDetail
-        CreateMap<RentalOrderDetailRequestDto, RentalOrderDetail>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.DueDate, opt => opt.Ignore()) // Calculated from RentalDays
-            .ForMember(dest => dest.ReturnDate, opt => opt.Ignore())
-            .ForMember(dest => dest.IsReturned, opt => opt.Ignore())
-            .ForMember(dest => dest.RentalOrderId, opt => opt.Ignore())
-            .ForMember(dest => dest.RentalOrder, opt => opt.Ignore())
-            .ForMember(dest => dest.Book, opt => opt.Ignore())
-            .ForMember(dest => dest.Status, opt => opt.Ignore())
-            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
 
         // RentalOrderDetail to RentalOrderDetailResponseDto
         CreateMap<RentalOrderDetail, RentalOrderDetailResponseDto>()

@@ -112,59 +112,68 @@ public class RentalOrderService : IRentalOrderService
                 };
             }
 
-            // Validate books availability
-            foreach (var detail in request.Details)
+            // Remove duplicate book IDs and validate books availability
+            var uniqueBookIds = request.BookIds.Distinct().ToList();
+            var unavailableBooks = new List<string>();
+
+            foreach (var bookId in uniqueBookIds)
             {
-                var book = await _bookRepository.GetByIdAsync(detail.BookId);
+                var book = await _bookRepository.GetByIdAsync(bookId);
                 if (book == null)
                 {
                     return new BaseResponseGeneric<int>
                     {
                         Success = false,
-                        ErrorMessage = $"Book with ID {detail.BookId} not found"
+                        ErrorMessage = $"Book with ID {bookId} not found"
                     };
                 }
 
-                if (book.Stock < detail.Quantity)
+                if (book.Stock < 1 || !book.IsAvailable)
                 {
-                    return new BaseResponseGeneric<int>
-                    {
-                        Success = false,
-                        ErrorMessage = $"Insufficient stock for book '{book.Title}'. Available: {book.Stock}, Requested: {detail.Quantity}"
-                    };
+                    unavailableBooks.Add($"'{book.Title}'");
                 }
             }
 
+            if (unavailableBooks.Any())
+            {
+                return new BaseResponseGeneric<int>
+                {
+                    Success = false,
+                    ErrorMessage = $"The following books are not available: {string.Join(", ", unavailableBooks)}"
+                };
+            }
+
             // Create rental order
+            var dueDate = DateTime.UtcNow.AddDays(request.RentalDays);
             var rentalOrder = new RentalOrder
             {
                 CustomerId = request.CustomerId,
                 OrderDate = DateTime.UtcNow,
-                DueDate = request.DueDate,
+                DueDate = dueDate,
                 OrderNumber = GenerateOrderNumber(),
                 OrderStatus = OrderStatus.Active,
                 Notes = request.Notes,
                 RentalOrderDetails = new List<RentalOrderDetail>()
             };
 
-            // Create rental order details
-            foreach (var detail in request.Details)
+            // Create rental order details - one detail per book, quantity always 1
+            foreach (var bookId in uniqueBookIds)
             {
-                var book = await _bookRepository.GetByIdAsync(detail.BookId);
+                var book = await _bookRepository.GetByIdAsync(bookId);
                 var rentalOrderDetail = new RentalOrderDetail
                 {
-                    BookId = detail.BookId,
-                    Quantity = detail.Quantity,
-                    RentalDays = detail.RentalDays,
-                    DueDate = DateTime.UtcNow.AddDays(detail.RentalDays),
-                    Notes = detail.Notes,
+                    BookId = bookId,
+                    Quantity = 1, // Always 1 per book in a library system
+                    RentalDays = request.RentalDays,
+                    DueDate = dueDate,
+                    Notes = null, // Individual book notes can be added via separate endpoint if needed
                     IsReturned = false
                 };
 
                 rentalOrder.RentalOrderDetails.Add(rentalOrderDetail);
 
                 // Update book stock and availability
-                book!.Stock -= detail.Quantity;
+                book!.Stock -= 1;
                 book.IsAvailable = book.Stock > 0;
                 await _bookRepository.UpdateAsync(book);
             }

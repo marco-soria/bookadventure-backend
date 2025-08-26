@@ -53,18 +53,9 @@ public class RentalOrdersController : ControllerBase
         var rentalOrderRequest = new RentalOrderRequestDto
         {
             CustomerId = request.CustomerId,
-            DueDate = DateTime.UtcNow.AddDays(request.RentalDays),
+            RentalDays = request.RentalDays,
             Notes = request.OrderNotes,
-            Details = new List<RentalOrderDetailRequestDto>
-            {
-                new()
-                {
-                    BookId = request.BookId,
-                    Quantity = 1,
-                    RentalDays = request.RentalDays,
-                    Notes = request.Notes
-                }
-            }
+            BookIds = new List<int> { request.BookId }
         };
 
         var response = await _rentalOrderService.CreateRentalOrderAsync(rentalOrderRequest);
