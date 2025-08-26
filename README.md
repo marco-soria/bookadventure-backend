@@ -33,10 +33,23 @@ BookAdventure/
 
 - ✅ Complete CRUD operations for books
 - ✅ Stock control and availability tracking
-- ✅ Book search and filtering capabilities
-- ✅ Pagination support for large datasets
+- ✅ **Advanced search and filtering system**
+- ✅ **Multiple filtering options** (genre, author, availability)
+- ✅ **Alphabetical sorting** (ascending/descending)
+- ✅ **Search by genre name** (e.g., "Fantasy", "Science Fiction")
+- ✅ **Combined filters** with pagination
 - ✅ Genre categorization
 - ✅ Image URL support for book covers
+
+### 🔍 Advanced Search & Filtering Features
+
+- **Genre filtering**: Filter by genre ID or genre name
+- **Text search**: Search across title, author, and description
+- **Alphabetical sorting**: Sort books A-Z or Z-A
+- **Stock filtering**: Filter by availability (in stock/out of stock)
+- **Author filtering**: Find books by specific authors
+- **Combined filters**: Use multiple filters simultaneously
+- **Pagination support**: Efficient handling of large result sets
 
 ### 🏷️ Genre Management
 
@@ -123,12 +136,80 @@ BookAdventure/
 
 ### 📚 Books API
 
-```
+#### Basic Operations
+
+```http
 GET    /api/books              # List books with pagination
 GET    /api/books/{id}         # Get book details
-POST   /api/books              # Create new book
-PUT    /api/books/{id}         # Update book
-DELETE /api/books/{id}         # Soft delete book
+POST   /api/books              # Create new book [Admin]
+PUT    /api/books/{id}         # Update book [Admin]
+DELETE /api/books/{id}         # Soft delete book [Admin]
+```
+
+#### 🔍 Search & Filtering Endpoints
+
+##### Basic Search
+
+```http
+GET    /api/books/search?title={title}                    # Search by book title
+```
+
+##### Genre Filtering
+
+```http
+GET    /api/books/genre/{genreId}                         # Filter by genre ID
+GET    /api/books/genre/name/{genreName}                  # Filter by genre name (e.g., "Fantasy")
+```
+
+##### Alphabetical Sorting
+
+```http
+GET    /api/books/alphabetical?descending={true|false}    # Sort alphabetically A-Z or Z-A
+GET    /api/books/genre/{genreId}/alphabetical            # Genre + alphabetical sorting
+GET    /api/books/genre/name/{genreName}/alphabetical     # Genre name + alphabetical sorting
+```
+
+##### Advanced Search (Multiple Filters)
+
+```http
+GET    /api/books/advanced-search                         # Combined filters and sorting
+```
+
+**Advanced Search Parameters:**
+
+- `genreId` (int): Filter by genre ID
+- `author` (string): Filter by author name
+- `search` (string): Search in title, author, description
+- `inStock` (bool): Filter by availability
+- `sortBy` (string): Sort field - "title", "author", "genre", "stock", "createdat"
+- `sortDescending` (bool): Sort direction
+- `page` (int): Page number for pagination
+- `recordsPerPage` (int): Items per page
+
+##### Additional Filters
+
+```http
+GET    /api/books/author/{author}                         # Filter by author name
+GET    /api/books/in-stock                                # Only books in stock
+```
+
+#### 📝 Example Requests
+
+```bash
+# Get all Fantasy books sorted alphabetically A-Z
+GET /api/books/genre/name/Fantasy/alphabetical?descending=false
+
+# Search for "harry" in all fields, sorted by title
+GET /api/books/advanced-search?search=harry&sortBy=title&sortDescending=false
+
+# Get books by Stephen King that are in stock
+GET /api/books/advanced-search?author=Stephen King&inStock=true
+
+# Science Fiction books sorted by author Z-A
+GET /api/books/advanced-search?genreId=2&sortBy=author&sortDescending=true
+
+# Combined search: Fantasy + "magic" + in stock + sorted by title
+GET /api/books/advanced-search?genreId=1&search=magic&inStock=true&sortBy=title
 ```
 
 ### 🏷️ Genres API
@@ -300,6 +381,23 @@ The API is configured to accept requests from any origin during development. Upd
 - ✅ Partial order support
 - ✅ Health monitoring
 - ✅ Structured logging
+- ✅ **Advanced search and filtering system**
+- ✅ **Multiple filtering options** (genre, author, stock, text search)
+- ✅ **Alphabetical sorting** (A-Z and Z-A)
+- ✅ **Genre filtering by name** (user-friendly URLs)
+- ✅ **Combined filters** with pagination support
+- ✅ **Frontend-ready endpoints** with comprehensive examples
+
+### 🆕 Latest Features (August 2025)
+
+- **Genre Name Filtering**: Search by genre names like "Fantasy", "Science Fiction"
+- **Advanced Search Endpoint**: Combine multiple filters in a single request
+- **Alphabetical Sorting**: Sort books A-Z or Z-A by title, author, or genre
+- **Stock Filtering**: Filter by book availability (in stock/out of stock)
+- **Author Filtering**: Find books by specific authors
+- **Text Search**: Search across title, author, and description fields
+- **Flexible Pagination**: Efficient handling of large datasets
+- **Frontend Examples**: Complete integration examples for React, Angular, Vue
 
 ## 🌐 Frontend Integration
 
@@ -317,6 +415,189 @@ This backend is designed to work with modern frontend frameworks:
 - Include `Authorization: Bearer {token}` header for protected endpoints
 - Handle 201, 206, and 400 status codes for rental operations
 - Implement pagination using query parameters
+
+### 🔍 Frontend Filter Implementation Examples
+
+#### JavaScript/TypeScript Examples
+
+```javascript
+// Basic book search with filters
+class BookService {
+  // Search books with multiple filters
+  async searchBooks(filters = {}) {
+    const params = new URLSearchParams();
+
+    if (filters.genreName) params.append("genreId", filters.genreId);
+    if (filters.author) params.append("author", filters.author);
+    if (filters.search) params.append("search", filters.search);
+    if (filters.inStock !== undefined)
+      params.append("inStock", filters.inStock);
+    if (filters.sortBy) params.append("sortBy", filters.sortBy);
+    if (filters.sortDescending)
+      params.append("sortDescending", filters.sortDescending);
+
+    params.append("page", filters.page || 1);
+    params.append("recordsPerPage", filters.recordsPerPage || 10);
+
+    const response = await fetch(`/api/books/advanced-search?${params}`);
+    return response.json();
+  }
+
+  // Get books by genre name (user-friendly)
+  async getBooksByGenre(
+    genreName,
+    sortAlphabetically = false,
+    descending = false
+  ) {
+    const endpoint = sortAlphabetically
+      ? `/api/books/genre/name/${encodeURIComponent(
+          genreName
+        )}/alphabetical?descending=${descending}`
+      : `/api/books/genre/name/${encodeURIComponent(genreName)}`;
+
+    const response = await fetch(endpoint);
+    return response.json();
+  }
+
+  // Get books sorted alphabetically
+  async getBooksAlphabetically(descending = false, page = 1) {
+    const response = await fetch(
+      `/api/books/alphabetical?descending=${descending}&page=${page}`
+    );
+    return response.json();
+  }
+}
+```
+
+#### React Component Example
+
+```jsx
+import React, { useState, useEffect } from "react";
+
+const BookFilter = () => {
+  const [books, setBooks] = useState([]);
+  const [filters, setFilters] = useState({
+    search: "",
+    genreName: "",
+    author: "",
+    inStock: null,
+    sortBy: "title",
+    sortDescending: false,
+  });
+
+  const searchBooks = async () => {
+    try {
+      const bookService = new BookService();
+      const result = await bookService.searchBooks(filters);
+      setBooks(result.data || []);
+    } catch (error) {
+      console.error("Error searching books:", error);
+    }
+  };
+
+  const handleGenreFilter = async (genreName) => {
+    setFilters({ ...filters, genreName });
+    const bookService = new BookService();
+    const result = await bookService.getBooksByGenre(genreName, true, false);
+    setBooks(result.data || []);
+  };
+
+  return (
+    <div>
+      {/* Search input */}
+      <input
+        type="text"
+        placeholder="Search books..."
+        value={filters.search}
+        onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+      />
+
+      {/* Genre filter */}
+      <select onChange={(e) => handleGenreFilter(e.target.value)}>
+        <option value="">All Genres</option>
+        <option value="Fantasy">Fantasy</option>
+        <option value="Science Fiction">Science Fiction</option>
+        <option value="Mystery">Mystery</option>
+      </select>
+
+      {/* Sort controls */}
+      <button
+        onClick={() =>
+          setFilters({ ...filters, sortBy: "title", sortDescending: false })
+        }
+      >
+        Sort A-Z
+      </button>
+      <button
+        onClick={() =>
+          setFilters({ ...filters, sortBy: "title", sortDescending: true })
+        }
+      >
+        Sort Z-A
+      </button>
+
+      {/* In stock filter */}
+      <label>
+        <input
+          type="checkbox"
+          checked={filters.inStock === true}
+          onChange={(e) =>
+            setFilters({ ...filters, inStock: e.target.checked ? true : null })
+          }
+        />
+        In Stock Only
+      </label>
+
+      <button onClick={searchBooks}>Search</button>
+
+      {/* Results */}
+      <div>
+        {books.map((book) => (
+          <div key={book.id}>
+            <h3>{book.title}</h3>
+            <p>Author: {book.author}</p>
+            <p>Genre: {book.genreName}</p>
+            <p>Stock: {book.stock}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+### 📱 Mobile-Friendly Filtering
+
+```javascript
+// Mobile app integration example
+class MobileBookService {
+  // Quick genre-based filtering for mobile
+  async getPopularByGenre(genreName) {
+    return await fetch(
+      `/api/books/genre/name/${encodeURIComponent(
+        genreName
+      )}/alphabetical?recordsPerPage=20`
+    ).then((r) => r.json());
+  }
+
+  // Search with autocomplete
+  async searchWithAutocomplete(query) {
+    return await fetch(
+      `/api/books/advanced-search?search=${encodeURIComponent(
+        query
+      )}&recordsPerPage=5`
+    ).then((r) => r.json());
+  }
+}
+```
+
+### 🎯 Common Integration Patterns
+
+1. **Genre Dropdown**: Use `/api/genres` to populate dropdown, then filter with genre names
+2. **Search Bar**: Use `/api/books/advanced-search` with `search` parameter
+3. **Sort Buttons**: Toggle `sortDescending` parameter for A-Z/Z-A sorting
+4. **Stock Filter**: Use `inStock` parameter for availability filtering
+5. **Pagination**: Handle `TotalRecordsQuantity` header for page controls
 
 ## 🤝 Contributing
 
