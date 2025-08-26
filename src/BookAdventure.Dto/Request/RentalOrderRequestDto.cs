@@ -16,4 +16,11 @@ public class RentalOrderRequestDto
     
     [Required(ErrorMessage = "Must include at least one book")]
     public List<int> BookIds { get; set; } = new();
+    
+    /// <summary>
+    /// If true, creates partial order with available books only.
+    /// If false, fails entire order if any book is unavailable.
+    /// Default: false (fail all if any unavailable)
+    /// </summary>
+    public bool AllowPartialOrder { get; set; } = false;
 }

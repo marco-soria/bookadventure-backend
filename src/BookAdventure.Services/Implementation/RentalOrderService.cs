@@ -97,7 +97,7 @@ public class RentalOrderService : IRentalOrderService
         }
     }
 
-    public async Task<BaseResponseGeneric<int>> CreateRentalOrderAsync(RentalOrderRequestDto request)
+    public async Task<RentalOrderCreationResponseDto> CreateRentalOrderAsync(RentalOrderRequestDto request)
     {
         try
         {
@@ -105,7 +105,7 @@ public class RentalOrderService : IRentalOrderService
             var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
             if (customer == null)
             {
-                return new BaseResponseGeneric<int>
+                return new RentalOrderCreationResponseDto
                 {
                     Success = false,
                     ErrorMessage = "Customer not found"
@@ -114,36 +114,79 @@ public class RentalOrderService : IRentalOrderService
 
             // Remove duplicate book IDs and validate books availability
             var uniqueBookIds = request.BookIds.Distinct().ToList();
-            var unavailableBooks = new List<string>();
+            var processedBooks = new List<BookAvailabilityDto>();
+            var unavailableBooks = new List<BookAvailabilityDto>();
+            var availableBookIds = new List<int>();
 
             foreach (var bookId in uniqueBookIds)
             {
                 var book = await _bookRepository.GetByIdAsync(bookId);
                 if (book == null)
                 {
-                    return new BaseResponseGeneric<int>
+                    unavailableBooks.Add(new BookAvailabilityDto
                     {
-                        Success = false,
-                        ErrorMessage = $"Book with ID {bookId} not found"
-                    };
+                        BookId = bookId,
+                        BookTitle = $"Book ID {bookId}",
+                        BookAuthor = "Unknown",
+                        CurrentStock = 0,
+                        Reason = "Book not found"
+                    });
+                    continue;
                 }
 
                 if (book.Stock < 1 || !book.IsAvailable)
                 {
-                    unavailableBooks.Add($"'{book.Title}'");
+                    unavailableBooks.Add(new BookAvailabilityDto
+                    {
+                        BookId = bookId,
+                        BookTitle = book.Title,
+                        BookAuthor = book.Author,
+                        CurrentStock = book.Stock,
+                        Reason = book.Stock < 1 ? "Out of stock" : "Not available"
+                    });
+                }
+                else
+                {
+                    processedBooks.Add(new BookAvailabilityDto
+                    {
+                        BookId = bookId,
+                        BookTitle = book.Title,
+                        BookAuthor = book.Author,
+                        CurrentStock = book.Stock,
+                        Reason = "Added successfully"
+                    });
+                    availableBookIds.Add(bookId);
                 }
             }
 
-            if (unavailableBooks.Any())
+            // Decision logic based on availability and user preference
+            if (unavailableBooks.Any() && !request.AllowPartialOrder)
             {
-                return new BaseResponseGeneric<int>
+                // Strict mode: fail if any book is unavailable
+                return new RentalOrderCreationResponseDto
                 {
                     Success = false,
-                    ErrorMessage = $"The following books are not available: {string.Join(", ", unavailableBooks)}"
+                    ErrorMessage = $"The following books are not available: {string.Join(", ", unavailableBooks.Select(b => $"'{b.BookTitle}' ({b.Reason})"))}. Set 'allowPartialOrder' to true to create order with available books only.",
+                    ProcessedBooks = processedBooks,
+                    UnavailableBooks = unavailableBooks,
+                    IsPartialOrder = false
                 };
             }
 
-            // Create rental order
+            if (!availableBookIds.Any())
+            {
+                // No books available at all
+                return new RentalOrderCreationResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = "No books are available for rental",
+                    ProcessedBooks = processedBooks,
+                    UnavailableBooks = unavailableBooks,
+                    IsPartialOrder = false
+                };
+            }
+
+            // Create rental order with available books
             var dueDate = DateTime.UtcNow.AddDays(request.RentalDays);
             var rentalOrder = new RentalOrder
             {
@@ -156,8 +199,8 @@ public class RentalOrderService : IRentalOrderService
                 RentalOrderDetails = new List<RentalOrderDetail>()
             };
 
-            // Create rental order details - one detail per book, quantity always 1
-            foreach (var bookId in uniqueBookIds)
+            // Create rental order details - one detail per available book, quantity always 1
+            foreach (var bookId in availableBookIds)
             {
                 var book = await _bookRepository.GetByIdAsync(bookId);
                 var rentalOrderDetail = new RentalOrderDetail
@@ -180,15 +223,21 @@ public class RentalOrderService : IRentalOrderService
 
             var createdRentalOrder = await _rentalOrderRepository.CreateAsync(rentalOrder);
 
-            return new BaseResponseGeneric<int>
+            return new RentalOrderCreationResponseDto
             {
                 Success = true,
-                Data = createdRentalOrder.Id
+                RentalOrderId = createdRentalOrder.Id,
+                ProcessedBooks = processedBooks,
+                UnavailableBooks = unavailableBooks,
+                IsPartialOrder = unavailableBooks.Any(),
+                ErrorMessage = unavailableBooks.Any() 
+                    ? $"Partial order created. {unavailableBooks.Count} book(s) were not available: {string.Join(", ", unavailableBooks.Select(b => b.BookTitle))}"
+                    : null
             };
         }
         catch (Exception ex)
         {
-            return new BaseResponseGeneric<int>
+            return new RentalOrderCreationResponseDto
             {
                 Success = false,
                 ErrorMessage = $"Error creating rental order: {ex.Message}"
@@ -229,11 +278,92 @@ public class RentalOrderService : IRentalOrderService
                     existingRentalOrder.CustomerId = request.CustomerId.Value;
                 }
 
-                if (request.DueDate.HasValue)
-                    existingRentalOrder.DueDate = request.DueDate.Value;
+                if (request.RentalDays.HasValue)
+                {
+                    var newDueDate = existingRentalOrder.OrderDate.AddDays(request.RentalDays.Value);
+                    existingRentalOrder.DueDate = newDueDate;
+                    
+                    // Update all details with new due date
+                    foreach (var detail in existingRentalOrder.RentalOrderDetails)
+                    {
+                        detail.DueDate = newDueDate;
+                        detail.RentalDays = request.RentalDays.Value;
+                    }
+                }
                 
                 if (request.Notes != null)
                     existingRentalOrder.Notes = request.Notes;
+
+                // Handle book changes if provided
+                if (request.BookIds != null && request.BookIds.Any())
+                {
+                    var uniqueBookIds = request.BookIds.Distinct().ToList();
+                    var currentBookIds = existingRentalOrder.RentalOrderDetails
+                        .Where(d => !d.IsReturned)
+                        .Select(d => d.BookId)
+                        .ToList();
+
+                    // Books to remove (restore stock)
+                    var booksToRemove = currentBookIds.Except(uniqueBookIds).ToList();
+                    foreach (var bookId in booksToRemove)
+                    {
+                        var detail = existingRentalOrder.RentalOrderDetails
+                            .First(d => d.BookId == bookId && !d.IsReturned);
+                        detail.IsReturned = true;
+                        detail.ReturnDate = DateTime.UtcNow;
+
+                        var book = await _bookRepository.GetByIdAsync(bookId);
+                        if (book != null)
+                        {
+                            book.Stock += detail.Quantity;
+                            book.IsAvailable = book.Stock > 0;
+                            await _bookRepository.UpdateAsync(book);
+                        }
+                    }
+
+                    // Books to add (check stock and add)
+                    var booksToAdd = uniqueBookIds.Except(currentBookIds).ToList();
+                    foreach (var bookId in booksToAdd)
+                    {
+                        var book = await _bookRepository.GetByIdAsync(bookId);
+                        if (book == null)
+                        {
+                            return new BaseResponse
+                            {
+                                Success = false,
+                                ErrorMessage = $"Book with ID {bookId} not found"
+                            };
+                        }
+
+                        if (book.Stock < 1 || !book.IsAvailable)
+                        {
+                            return new BaseResponse
+                            {
+                                Success = false,
+                                ErrorMessage = $"Book '{book.Title}' is not available"
+                            };
+                        }
+
+                        // Add new detail
+                        var newDetail = new RentalOrderDetail
+                        {
+                            BookId = bookId,
+                            Quantity = 1,
+                            RentalDays = request.RentalDays ?? existingRentalOrder.RentalOrderDetails.First().RentalDays,
+                            DueDate = request.RentalDays.HasValue 
+                                ? existingRentalOrder.OrderDate.AddDays(request.RentalDays.Value)
+                                : existingRentalOrder.DueDate,
+                            IsReturned = false
+                        };
+
+                        existingRentalOrder.RentalOrderDetails.Add(newDetail);
+
+                        // Update book stock
+                        book.Stock -= 1;
+                        book.IsAvailable = book.Stock > 0;
+                        await _bookRepository.UpdateAsync(book);
+                    }
+                }
                 
                 await _rentalOrderRepository.UpdateAsync(existingRentalOrder);
 

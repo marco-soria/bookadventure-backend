@@ -41,9 +41,25 @@ public class RentalOrdersController : ControllerBase
     public async Task<IActionResult> Post([FromBody] RentalOrderRequestDto request)
     {
         var response = await _rentalOrderService.CreateRentalOrderAsync(request);
-        return response.Success ? 
-            CreatedAtAction(nameof(Get), new { id = response.Data }, response) : 
-            BadRequest(response);
+        
+        if (response.Success)
+        {
+            if (response.IsPartialOrder)
+            {
+                // 206 Partial Content - some books were processed, some weren't
+                return StatusCode(206, response);
+            }
+            else
+            {
+                // 201 Created - all books were processed successfully
+                return CreatedAtAction(nameof(Get), new { id = response.RentalOrderId }, response);
+            }
+        }
+        else
+        {
+            // 400 Bad Request - order failed completely
+            return BadRequest(response);
+        }
     }
 
     [HttpPost("rent-single-book")]
@@ -59,9 +75,15 @@ public class RentalOrdersController : ControllerBase
         };
 
         var response = await _rentalOrderService.CreateRentalOrderAsync(rentalOrderRequest);
-        return response.Success ? 
-            CreatedAtAction(nameof(Get), new { id = response.Data }, response) : 
-            BadRequest(response);
+        
+        if (response.Success)
+        {
+            return CreatedAtAction(nameof(Get), new { id = response.RentalOrderId }, response);
+        }
+        else
+        {
+            return BadRequest(response);
+        }
     }
 
     [HttpPut("{id:int}")]
