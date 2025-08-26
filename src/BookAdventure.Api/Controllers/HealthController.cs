@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookAdventure.Api.Controllers;
@@ -6,7 +7,11 @@ namespace BookAdventure.Api.Controllers;
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {
+    /// <summary>
+    /// Health check endpoint - Public access
+    /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult Get()
     {
         return Ok(new { 
@@ -17,7 +22,11 @@ public class HealthController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Simple ping endpoint - Public access
+    /// </summary>
     [HttpGet("ping")]
+    [AllowAnonymous]
     public IActionResult Ping()
     {
         return Ok("pong");

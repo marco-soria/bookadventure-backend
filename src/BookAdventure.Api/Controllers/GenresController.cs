@@ -1,5 +1,6 @@
 using BookAdventure.Dto.Request;
 using BookAdventure.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookAdventure.Api.Controllers;
@@ -17,21 +18,33 @@ public class GenresController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Get all genres - Public access
+    /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> Get()
     {
         var response = await _genreService.GetAsync();
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+    /// <summary>
+    /// Get genre by ID - Public access
+    /// </summary>
     [HttpGet("{id:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Get(int id)
     {
         var response = await _genreService.GetAsync(id);
         return response.Success ? Ok(response) : NotFound(response);
     }
 
+    /// <summary>
+    /// Create new genre - Admin only
+    /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Post([FromBody] GenreRequestDto request)
     {
         var response = await _genreService.AddAsync(request);
@@ -40,14 +53,22 @@ public class GenresController : ControllerBase
             BadRequest(response);
     }
 
+    /// <summary>
+    /// Update genre - Admin only
+    /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Put(int id, [FromBody] GenreUpdateRequestDto request)
     {
         var response = await _genreService.UpdateAsync(id, request);
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+    /// <summary>
+    /// Delete genre - Admin only
+    /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Delete(int id)
     {
         var response = await _genreService.DeleteAsync(id);

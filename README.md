@@ -22,10 +22,12 @@ BookAdventure/
 ### 🔐 Authentication & Authorization
 
 - ✅ JWT Token Authentication with Bearer scheme
-- ✅ ASP.NET Identity Framework with role-based access
+- ✅ ASP.NET Identity Framework with role-based access (Admin/User roles)
+- ✅ Comprehensive authorization policies on all endpoints
 - ✅ User registration with automatic customer profile creation
 - ✅ Login with secure password hashing
 - ✅ Swagger UI with JWT integration for testing
+- ✅ Protected endpoints with ownership validation
 
 ### 📚 Book Management
 
@@ -151,23 +153,27 @@ GET    /api/customers/{dni}/rented-books  # Get rented books by DNI
 
 ### 📋 Rental Orders API
 
-```
-GET    /api/rentalorders                    # List rental orders
-GET    /api/rentalorders/{id}              # Get order details
-POST   /api/rentalorders                   # Create rental order
-POST   /api/rentalorders/rent-single-book  # Rent single book
-PUT    /api/rentalorders/{id}              # Update order
-DELETE /api/rentalorders/{id}              # Cancel order
-POST   /api/rentalorders/{id}/return       # Return specific books
-GET    /api/rentalorders/overdue           # Get overdue rentals
+```http
+GET    /api/rentalorders                     # List rental orders [Admin]
+GET    /api/rentalorders/{id}               # Get order details [Admin]
+POST   /api/rentalorders                    # Create rental order [User - own orders]
+POST   /api/rentalorders/create-for-me      # Create order for current user [User]
+POST   /api/rentalorders/rent-single-book   # Rent single book [User - own orders]
+PUT    /api/rentalorders/{id}               # Update order [Admin]
+DELETE /api/rentalorders/{id}               # Cancel order [Admin]
+POST   /api/rentalorders/{id}/return        # Return books [User - own orders/Admin]
+GET    /api/rentalorders/my-orders          # Get user's rental orders [User]
+GET    /api/rentalorders/overdue            # Get overdue rentals [Admin]
 ```
 
 ### 🔐 Users API
 
-```
-POST   /api/users/register    # Register new user (creates customer)
-POST   /api/users/login       # User authentication
-GET    /api/users/profile     # Get user profile [Requires JWT]
+```http
+POST   /api/users/register           # Register new user (creates customer) [Public]
+POST   /api/users/login              # User authentication [Public]
+GET    /api/users/profile            # Get user profile [User]
+PUT    /api/users/profile            # Update user profile [User]
+GET    /api/users/my-rental-orders   # Get user's rental orders [User]
 ```
 
 ### ⚕️ Health Checks
@@ -249,9 +255,18 @@ On first run, the application automatically seeds:
 
 ### Default Admin Account
 
-```
-Email: admin@bookadventure.com
+```text
+Email: admin@gmail.com
 Password: Admin123!
+Role: Admin
+```
+
+### Sample Customer Account
+
+```text
+Email: john.doe@example.com
+Password: Customer123!
+Role: User
 ```
 
 ## 🔧 Configuration

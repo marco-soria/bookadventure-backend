@@ -1,5 +1,6 @@
 using BookAdventure.Dto.Request;
 using BookAdventure.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookAdventure.Api.Controllers;
@@ -17,7 +18,11 @@ public class BooksController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Get all books with pagination - Public access for browsing
+    /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> Get([FromQuery] PaginationDto? pagination = null)
     {
         // Provide default pagination if none is provided
@@ -33,14 +38,22 @@ public class BooksController : ControllerBase
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+    /// <summary>
+    /// Get book by ID - Public access for viewing details
+    /// </summary>
     [HttpGet("{id:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Get(int id)
     {
         var response = await _bookService.GetAsync(id);
         return response.Success ? Ok(response) : NotFound(response);
     }
 
+    /// <summary>
+    /// Create new book - Admin only
+    /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Post([FromBody] BookRequestDto request)
     {
         var response = await _bookService.AddAsync(request);
@@ -49,21 +62,33 @@ public class BooksController : ControllerBase
             BadRequest(response);
     }
 
+    /// <summary>
+    /// Update book - Admin only
+    /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Put(int id, [FromBody] BookUpdateRequestDto request)
     {
         var response = await _bookService.UpdateAsync(id, request);
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+    /// <summary>
+    /// Delete book - Admin only
+    /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Delete(int id)
     {
         var response = await _bookService.DeleteAsync(id);
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+    /// <summary>
+    /// Search books by title - Public access
+    /// </summary>
     [HttpGet("search")]
+    [AllowAnonymous]
     public async Task<IActionResult> Search([FromQuery] string title)
     {
         if (string.IsNullOrWhiteSpace(title))
