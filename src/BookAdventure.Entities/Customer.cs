@@ -28,6 +28,10 @@ public class Customer : BaseEntity
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
     
+    // Link to Identity User
+    [MaxLength(450)] // ASP.NET Identity default key length
+    public string? UserId { get; set; }
+    
     // Computed property for backwards compatibility
     public string FullName => $"{FirstName} {LastName}";
     

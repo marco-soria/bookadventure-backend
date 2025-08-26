@@ -67,18 +67,24 @@ public class CustomerSeeder
                         user = existingUser;
                     }
 
-                    // 2. Crear Customer entity
-                    var customer = new Customer
+                    // 2. Crear Customer entity vinculado al usuario
+                    var existingCustomer = await context.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
+                    
+                    if (existingCustomer == null)
                     {
-                        Email = email,
-                        FirstName = firstName,
-                        LastName = lastName,
-                        DNI = dni,
-                        Age = age,
-                        PhoneNumber = phone
-                    };
+                        var customer = new Customer
+                        {
+                            Email = email,
+                            FirstName = firstName,
+                            LastName = lastName,
+                            DNI = dni,
+                            Age = age,
+                            PhoneNumber = phone,
+                            UserId = user.Id // ✅ Vinculamos al usuario
+                        };
 
-                    await context.Customers.AddAsync(customer);
+                        await context.Customers.AddAsync(customer);
+                    }
                 }
 
                 await context.SaveChangesAsync();

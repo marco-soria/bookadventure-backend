@@ -4,6 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BookAdventure.Api.Controllers;
 
+/// <summary>
+/// Customer Management Controller - Handles customer data operations.
+/// Note: Customers are created automatically when users register via UsersController.
+/// This controller is used for reading, updating, and managing existing customer data.
+/// All customers must have user accounts for authentication.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class CustomersController : ControllerBase
@@ -37,15 +43,6 @@ public class CustomersController : ControllerBase
         return response.Success ? Ok(response) : NotFound(response);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CustomerRequestDto request)
-    {
-        var response = await _customerService.AddAsync(request);
-        return response.Success ? 
-            CreatedAtAction(nameof(Get), new { id = response.Data }, response) : 
-            BadRequest(response);
-    }
-
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Put(int id, [FromBody] CustomerUpdateRequestDto request)
     {
@@ -77,5 +74,17 @@ public class CustomersController : ControllerBase
 
         var response = await _customerService.SearchByNameAsync(name);
         return response.Success ? Ok(response) : BadRequest(response);
+    }
+
+    [HttpGet("dni/{dni}/rented-books")]
+    public async Task<IActionResult> GetRentedBooksByDni(string dni)
+    {
+        if (string.IsNullOrWhiteSpace(dni))
+        {
+            return BadRequest("DNI parameter is required");
+        }
+
+        var response = await _customerService.GetRentedBooksByDniAsync(dni);
+        return response.Success ? Ok(response) : NotFound(response);
     }
 }

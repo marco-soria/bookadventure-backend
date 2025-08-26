@@ -2,6 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BookAdventure.Dto.Request;
 
+/// <summary>
+/// DTO for updating customer information.
+/// Note: Customers are created automatically through user registration.
+/// This DTO is used for updates and internal operations only.
+/// </summary>
 public class CustomerRequestDto
 {
     [Required(ErrorMessage = "Email is required")]

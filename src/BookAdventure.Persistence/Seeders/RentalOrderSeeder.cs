@@ -33,7 +33,8 @@ public class RentalOrderSeeder
                     for (int i = 0; i < random.Next(1, 3); i++)
                     {
                         var rentalDate = DateTime.UtcNow.AddDays(-random.Next(1, 30)); // Orders from last 30 days
-                        var dueDate = rentalDate.AddDays(14); // 14 days rental period
+                        var rentalDays = random.Next(7, 21); // 7-21 days rental period
+                        var dueDate = rentalDate.AddDays(rentalDays);
 
                         var order = new RentalOrder
                         {
@@ -55,7 +56,7 @@ public class RentalOrderSeeder
                         foreach (var book in selectedBooks)
                         {
                             var quantity = 1; // For simplicity, always 1 copy
-                            var rentalDays = (dueDate - rentalDate).Days;
+                            var detailRentalDays = (dueDate - rentalDate).Days;
                             var isReturned = random.Next(1, 10) > 3; // 70% returned
                             var returnDate = isReturned ? dueDate.AddDays(random.Next(-2, 3)) : (DateTime?)null;
 
@@ -63,7 +64,7 @@ public class RentalOrderSeeder
                             {
                                 BookId = book.Id,
                                 Quantity = quantity,
-                                RentalDays = rentalDays,
+                                RentalDays = detailRentalDays,
                                 DueDate = dueDate,
                                 ReturnDate = returnDate,
                                 IsReturned = isReturned,
@@ -74,6 +75,24 @@ public class RentalOrderSeeder
 
                             order.RentalOrderDetails.Add(detail);
                         }
+                        
+                        // Update order status based on details
+                        var allReturned = order.RentalOrderDetails.All(d => d.IsReturned);
+                        var hasOverdue = order.RentalOrderDetails.Any(d => !d.IsReturned && d.DueDate < DateTime.UtcNow);
+                        
+                        if (allReturned)
+                        {
+                            order.OrderStatus = OrderStatus.Returned;
+                        }
+                        else if (hasOverdue)
+                        {
+                            order.OrderStatus = OrderStatus.Overdue;
+                        }
+                        else
+                        {
+                            order.OrderStatus = OrderStatus.Active;
+                        }
+                        
                         orders.Add(order);
                     }
                 }

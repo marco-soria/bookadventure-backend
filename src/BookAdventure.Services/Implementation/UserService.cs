@@ -21,19 +21,22 @@ public class UserService : IUserService
     private readonly IConfiguration _configuration;
     private readonly ILogger<UserService> _logger;
     private readonly IMapper _mapper;
+    private readonly ICustomerService _customerService;
 
     public UserService(
         UserManager<BookAdventureUserIdentity> userManager,
         SignInManager<BookAdventureUserIdentity> signInManager,
         IConfiguration configuration,
         ILogger<UserService> logger,
-        IMapper mapper)
+        IMapper mapper,
+        ICustomerService customerService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _configuration = configuration;
         _logger = logger;
         _mapper = mapper;
+        _customerService = customerService;
     }
 
     public async Task<BaseResponseGeneric<RegisterResponseDto>> RegisterAsync(RegisterRequestDto request)
@@ -42,6 +45,23 @@ public class UserService : IUserService
 
         try
         {
+            // First check if customer with same DNI or email already exists
+            var existingCustomerByDni = await _customerService.GetByDniAsync(request.DocumentNumber);
+            if (existingCustomerByDni.Success)
+            {
+                response.Success = false;
+                response.ErrorMessage = "A customer with this DNI already exists";
+                return response;
+            }
+
+            var existingCustomers = await _customerService.FindAsync(c => c.Email == request.Email);
+            if (existingCustomers.Any())
+            {
+                response.Success = false;
+                response.ErrorMessage = "A customer with this email already exists";
+                return response;
+            }
+
             var user = new BookAdventureUserIdentity
             {
                 FirstName = request.FirstName,
@@ -60,14 +80,46 @@ public class UserService : IUserService
                 // Assign default role
                 await _userManager.AddToRoleAsync(user, Constants.RoleCustomer);
 
-                response.Data = new RegisterResponseDto
+                // Create corresponding Customer entity
+                var customerRequest = new CustomerRequestDto
                 {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email!
+                    Email = request.Email,
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    DNI = request.DocumentNumber,
+                    Age = request.Age,
+                    PhoneNumber = null // Can be updated later
                 };
-                response.Success = true;
+
+                // Map to Customer entity and set UserId
+                var customer = _mapper.Map<Customer>(customerRequest);
+                customer.UserId = user.Id;
+                
+                try
+                {
+                    var createdCustomer = await _customerService.CreateAsync(customer);
+                    
+                    response.Data = new RegisterResponseDto
+                    {
+                        Id = user.Id,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Email = user.Email!
+                    };
+                    response.Success = true;
+                    
+                    _logger.LogInformation("User registered successfully with Id: {UserId} and Customer Id: {CustomerId}", 
+                        user.Id, createdCustomer.Id);
+                }
+                catch (Exception customerEx)
+                {
+                    // If customer creation fails, rollback user creation
+                    await _userManager.DeleteAsync(user);
+                    response.Success = false;
+                    response.ErrorMessage = $"Error creating customer profile: {customerEx.Message}";
+                    _logger.LogError(customerEx, "Error creating customer during user registration");
+                    return response;
+                }
             }
             else
             {
@@ -100,7 +152,8 @@ public class UserService : IUserService
                 {
                     var roles = await _userManager.GetRolesAsync(user);
                     var token = GenerateJwtToken(user, roles);
-                    var expirationDate = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["JWT:DurationInDays"] ?? "7"));
+                    var lifetimeSeconds = Convert.ToInt32(_configuration["JWT:LifetimeInSeconds"] ?? "86400");
+                    var expirationDate = DateTime.UtcNow.AddSeconds(lifetimeSeconds);
 
                     response.Data = new LoginResponseDto
                     {
@@ -150,12 +203,11 @@ public class UserService : IUserService
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:JWTKey"]!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var lifetimeSeconds = Convert.ToInt32(_configuration["JWT:LifetimeInSeconds"] ?? "86400");
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["JWT:Issuer"],
-            audience: _configuration["JWT:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["JWT:DurationInDays"] ?? "7")),
+            expires: DateTime.UtcNow.AddSeconds(lifetimeSeconds),
             signingCredentials: credentials
         );
 

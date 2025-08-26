@@ -46,6 +46,33 @@ public class RentalOrdersController : ControllerBase
             BadRequest(response);
     }
 
+    [HttpPost("rent-single-book")]
+    public async Task<IActionResult> RentSingleBook([FromBody] SingleBookRentalRequestDto request)
+    {
+        // Convert single book request to full rental order request
+        var rentalOrderRequest = new RentalOrderRequestDto
+        {
+            CustomerId = request.CustomerId,
+            DueDate = DateTime.UtcNow.AddDays(request.RentalDays),
+            Notes = request.Notes,
+            Details = new List<RentalOrderDetailRequestDto>
+            {
+                new()
+                {
+                    BookId = request.BookId,
+                    Quantity = 1,
+                    RentalDays = request.RentalDays,
+                    Notes = request.BookNotes
+                }
+            }
+        };
+
+        var response = await _rentalOrderService.CreateRentalOrderAsync(rentalOrderRequest);
+        return response.Success ? 
+            CreatedAtAction(nameof(Get), new { id = response.Data }, response) : 
+            BadRequest(response);
+    }
+
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Put(int id, [FromBody] RentalOrderUpdateRequestDto request)
     {

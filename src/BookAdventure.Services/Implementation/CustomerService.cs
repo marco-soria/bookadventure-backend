@@ -81,50 +81,6 @@ public class CustomerService : ICustomerService
         }
     }
 
-    public async Task<BaseResponseGeneric<int>> AddAsync(CustomerRequestDto request)
-    {
-        try
-        {
-            // Check if customer with same DNI or email already exists
-            var existingByDni = await _customerRepository.GetByDniAsync(request.DNI);
-            if (existingByDni != null)
-            {
-                return new BaseResponseGeneric<int>
-                {
-                    Success = false,
-                    ErrorMessage = "Customer with this DNI already exists"
-                };
-            }
-
-            var existingByEmail = await _customerRepository.FindAsync(c => c.Email == request.Email);
-            if (existingByEmail.Any())
-            {
-                return new BaseResponseGeneric<int>
-                {
-                    Success = false,
-                    ErrorMessage = "Customer with this email already exists"
-                };
-            }
-
-            var customer = _mapper.Map<Customer>(request);
-            var createdCustomer = await _customerRepository.CreateAsync(customer);
-
-            return new BaseResponseGeneric<int>
-            {
-                Success = true,
-                Data = createdCustomer.Id
-            };
-        }
-        catch (Exception ex)
-        {
-            return new BaseResponseGeneric<int>
-            {
-                Success = false,
-                ErrorMessage = $"Error creating customer: {ex.Message}"
-            };
-        }
-    }
-
     public async Task<BaseResponse> UpdateAsync(int id, CustomerUpdateRequestDto request)
     {
         try
@@ -256,6 +212,40 @@ public class CustomerService : ICustomerService
         }
     }
 
+    public async Task<BaseResponseGeneric<CustomerResponseDto>> GetByUserIdAsync(string userId)
+    {
+        try
+        {
+            var customers = await _customerRepository.FindAsync(c => c.UserId == userId);
+            var customer = customers.FirstOrDefault();
+
+            if (customer == null)
+            {
+                return new BaseResponseGeneric<CustomerResponseDto>
+                {
+                    Success = false,
+                    ErrorMessage = "Customer not found for this user"
+                };
+            }
+
+            var response = _mapper.Map<CustomerResponseDto>(customer);
+
+            return new BaseResponseGeneric<CustomerResponseDto>
+            {
+                Success = true,
+                Data = response
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<CustomerResponseDto>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving customer by User ID: {ex.Message}"
+            };
+        }
+    }
+
     public async Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> SearchByNameAsync(string namePattern)
     {
         try
@@ -275,6 +265,67 @@ public class CustomerService : ICustomerService
             {
                 Success = false,
                 ErrorMessage = $"Error searching customers: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponseGeneric<ICollection<RentedBookResponseDto>>> GetRentedBooksByDniAsync(string dni)
+    {
+        try
+        {
+            // First find the customer by DNI
+            var customer = await _customerRepository.GetByDniAsync(dni);
+            if (customer == null)
+            {
+                return new BaseResponseGeneric<ICollection<RentedBookResponseDto>>
+                {
+                    Success = false,
+                    ErrorMessage = "Customer not found with the provided DNI"
+                };
+            }
+
+            // Get all rental order details for this customer with book information
+            var rentalDetails = await _customerRepository.Query()
+                .Where(c => c.DNI == dni)
+                .SelectMany(c => c.RentalOrders)
+                .SelectMany(ro => ro.RentalOrderDetails)
+                .Include(rod => rod.Book)
+                .ThenInclude(b => b.Genre)
+                .Include(rod => rod.RentalOrder)
+                .ToListAsync();
+
+            var rentedBooks = rentalDetails.Select(rod => new RentedBookResponseDto
+            {
+                BookId = rod.BookId,
+                Title = rod.Book.Title,
+                Author = rod.Book.Author,
+                ISBN = rod.Book.ISBN,
+                Genre = rod.Book.Genre.Name,
+                ImageUrl = rod.Book.ImageUrl,
+                RentalOrderId = rod.RentalOrderId,
+                OrderNumber = rod.RentalOrder.OrderNumber,
+                OrderDate = rod.RentalOrder.OrderDate,
+                DueDate = rod.DueDate,
+                ReturnDate = rod.ReturnDate,
+                IsReturned = rod.IsReturned,
+                Quantity = rod.Quantity,
+                RentalDays = rod.RentalDays,
+                Notes = rod.Notes,
+                OrderStatus = rod.RentalOrder.OrderStatus.ToString()
+            }).ToList();
+
+            return new BaseResponseGeneric<ICollection<RentedBookResponseDto>>
+            {
+                Success = true,
+                Data = rentedBooks
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<RentedBookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving rented books: {ex.Message}"
             };
         }
     }
