@@ -7,4 +7,5 @@ public interface IUserService
 {
     Task<BaseResponseGeneric<RegisterResponseDto>> RegisterAsync(RegisterRequestDto request);
     Task<BaseResponseGeneric<LoginResponseDto>> LoginAsync(LoginRequestDto request);
+    Task<BaseResponseGeneric<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request);
 }

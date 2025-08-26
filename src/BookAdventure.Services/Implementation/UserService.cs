@@ -8,6 +8,7 @@ using BookAdventure.Entities;
 using BookAdventure.Persistence;
 using BookAdventure.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -152,8 +153,16 @@ public class UserService : IUserService
                 {
                     var roles = await _userManager.GetRolesAsync(user);
                     var token = GenerateJwtToken(user, roles);
+                    var refreshToken = GenerateRefreshToken();
                     var lifetimeSeconds = Convert.ToInt32(_configuration["JWT:LifetimeInSeconds"] ?? "86400");
+                    var refreshTokenLifetimeDays = Convert.ToInt32(_configuration["JWT:RefreshTokenLifetimeInDays"] ?? "30");
                     var expirationDate = DateTime.UtcNow.AddSeconds(lifetimeSeconds);
+                    var refreshTokenExpirationDate = DateTime.UtcNow.AddDays(refreshTokenLifetimeDays);
+
+                    // Update user with refresh token
+                    user.RefreshToken = refreshToken;
+                    user.RefreshTokenExpirationDate = refreshTokenExpirationDate;
+                    await _userManager.UpdateAsync(user);
 
                     response.Data = new LoginResponseDto
                     {
@@ -163,6 +172,8 @@ public class UserService : IUserService
                         Email = user.Email!,
                         Token = token,
                         ExpirationDate = expirationDate,
+                        RefreshToken = refreshToken,
+                        RefreshTokenExpirationDate = refreshTokenExpirationDate,
                         Roles = roles.ToList()
                     };
                     response.Success = true;
@@ -212,5 +223,66 @@ public class UserService : IUserService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[32];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes);
+    }
+
+    public async Task<BaseResponseGeneric<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request)
+    {
+        var response = new BaseResponseGeneric<LoginResponseDto>();
+
+        try
+        {
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+
+            if (user == null || user.RefreshTokenExpirationDate <= DateTime.UtcNow)
+            {
+                response.Success = false;
+                response.ErrorMessage = "Invalid or expired refresh token";
+                return response;
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var newToken = GenerateJwtToken(user, roles);
+            var newRefreshToken = GenerateRefreshToken();
+            var lifetimeSeconds = Convert.ToInt32(_configuration["JWT:LifetimeInSeconds"] ?? "86400");
+            var refreshTokenLifetimeDays = Convert.ToInt32(_configuration["JWT:RefreshTokenLifetimeInDays"] ?? "30");
+            var expirationDate = DateTime.UtcNow.AddSeconds(lifetimeSeconds);
+            var refreshTokenExpirationDate = DateTime.UtcNow.AddDays(refreshTokenLifetimeDays);
+
+            // Update user with new refresh token
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpirationDate = refreshTokenExpirationDate;
+            await _userManager.UpdateAsync(user);
+
+            response.Data = new LoginResponseDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email!,
+                Token = newToken,
+                ExpirationDate = expirationDate,
+                RefreshToken = newRefreshToken,
+                RefreshTokenExpirationDate = refreshTokenExpirationDate,
+                Roles = roles.ToList()
+            };
+            response.Success = true;
+        }
+        catch (Exception ex)
+        {
+            response.Success = false;
+            response.ErrorMessage = "Error occurred during token refresh";
+            _logger.LogError(ex, "Error in RefreshTokenAsync");
+        }
+
+        return response;
     }
 }

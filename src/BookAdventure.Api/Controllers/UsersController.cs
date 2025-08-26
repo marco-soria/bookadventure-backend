@@ -52,6 +52,17 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
+    /// Refresh JWT token using refresh token - Public access
+    /// </summary>
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+    {
+        var response = await _userService.RefreshTokenAsync(request);
+        return response.Success ? Ok(response) : BadRequest(response);
+    }
+
+    /// <summary>
     /// Get user profile - Authenticated users only
     /// </summary>
     [HttpGet("profile")]

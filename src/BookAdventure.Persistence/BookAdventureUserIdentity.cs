@@ -21,6 +21,10 @@ public class BookAdventureUserIdentity : IdentityUser
     [StringLength(20)]
     public string DNI { get; set; } = default!;
     
+    // Refresh Token properties
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpirationDate { get; set; }
+    
     // Computed property
     public string FullName => $"{FirstName} {LastName}";
 }

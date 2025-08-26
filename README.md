@@ -1,6 +1,6 @@
 # 📚 BookAdventure - Library Management System API
 
-A comprehensive library management system backend built with **.NET 9** and **Entity Framework Core**, implementing a layered architecture with Repository and Service patterns. Ready for frontend integration with Angular, React, or any SPA framework.
+A comprehensive library management system backend built with **.NET 9** and **Entity Framework Core**, implementing a layered architecture with Repository and Service patterns. Features JWT authentication with refresh tokens for secure user sessions. Ready for frontend integration with Angular, React, or any SPA framework.
 
 ## 🏗️ Project Architecture
 
@@ -22,12 +22,22 @@ BookAdventure/
 ### 🔐 Authentication & Authorization
 
 - ✅ JWT Token Authentication with Bearer scheme
+- ✅ **Refresh Token Implementation** with automatic token renewal
 - ✅ ASP.NET Identity Framework with role-based access (Admin/User roles)
 - ✅ Comprehensive authorization policies on all endpoints
 - ✅ User registration with automatic customer profile creation
-- ✅ Login with secure password hashing
+- ✅ Login with secure password hashing and refresh token generation
+- ✅ **Extended token lifetimes** optimized for hobby projects
 - ✅ Swagger UI with JWT integration for testing
 - ✅ Protected endpoints with ownership validation
+
+#### 🔄 Refresh Token Features
+
+- **Automatic Token Renewal**: Seamless user experience without frequent re-authentication
+- **Long-lived Tokens**: JWT tokens valid for 7 days, refresh tokens for 90 days
+- **Secure Storage**: Refresh tokens stored securely in database with expiration tracking
+- **Hobby Project Optimized**: Extended lifetimes reduce server load and improve UX
+- **Stateless Design**: JWT remains stateless while refresh provides persistence
 
 ### 📚 Book Management
 
@@ -251,10 +261,59 @@ GET    /api/rentalorders/overdue            # Get overdue rentals [Admin]
 
 ```http
 POST   /api/users/register           # Register new user (creates customer) [Public]
-POST   /api/users/login              # User authentication [Public]
+POST   /api/users/login              # User authentication with refresh token [Public]
+POST   /api/users/refresh-token      # Refresh expired JWT token [Public]
 GET    /api/users/profile            # Get user profile [User]
 PUT    /api/users/profile            # Update user profile [User]
 GET    /api/users/my-rental-orders   # Get user's rental orders [User]
+```
+
+#### 🔄 Authentication Flow
+
+##### Login Response Format
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user-id",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expirationDate": "2025-09-02T12:00:00Z",
+    "refreshToken": "base64-encoded-refresh-token",
+    "refreshTokenExpirationDate": "2025-11-25T12:00:00Z",
+    "roles": ["User"]
+  }
+}
+```
+
+##### Refresh Token Request
+
+```json
+{
+  "refreshToken": "your-refresh-token-here"
+}
+```
+
+##### Refresh Token Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user-id",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "token": "new-jwt-token",
+    "expirationDate": "2025-09-09T12:00:00Z",
+    "refreshToken": "new-refresh-token",
+    "refreshTokenExpirationDate": "2025-12-02T12:00:00Z",
+    "roles": ["User"]
+  }
+}
 ```
 
 ### ⚕️ Health Checks
@@ -352,16 +411,35 @@ Role: User
 
 ## 🔧 Configuration
 
-### JWT Settings
+### 🔑 JWT & Refresh Token Settings
+
+**Default Token Lifetimes (Hobby Project Optimized):**
+
+- **JWT Token**: 7 days (604,800 seconds)
+- **Refresh Token**: 90 days
 
 ```json
 {
   "JWT": {
     "JWTKey": "your-super-secret-key-here-at-least-256-bits",
-    "LifetimeInSeconds": 86400
+    "LifetimeInSeconds": 604800,
+    "RefreshTokenExpirationDays": 90
   }
 }
 ```
+
+> **Note**: These extended lifetimes are optimized for hobby projects and development. For production environments, consider shorter durations:
+>
+> - **JWT**: 15-60 minutes (900-3600 seconds)
+> - **Refresh Token**: 1-7 days
+
+### 🔄 Refresh Token Features
+
+- **Automatic Token Refresh**: Frontend automatically refreshes expired JWT tokens
+- **Secure Storage**: Refresh tokens stored securely in the database
+- **Base64 Encoding**: Refresh tokens are base64-encoded for safe transmission
+- **Extended Sessions**: 90-day refresh token lifetime for hobby project convenience
+- **One-Time Use**: Each refresh generates a new token pair for security
 
 ### CORS Configuration
 
