@@ -42,24 +42,17 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile()
+    public async Task<IActionResult> GetProfile([FromQuery] string? userId = null)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Try to get userId from query parameter first, then from token
+        var targetUserId = userId ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
-        if (string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(targetUserId))
         {
-            return BadRequest("User ID not found. Please login first or provide userId parameter.");
+            return BadRequest("User ID is required. Provide userId parameter or login first.");
         }
 
-        var response = await _customerService.GetByUserIdAsync(userId);
-        return response.Success ? Ok(response) : NotFound(response);
-    }
-
-    // Temporary endpoint for testing without auth
-    [HttpGet("profile/test/{userId}")]
-    public async Task<IActionResult> GetProfileTest(string userId)
-    {
-        var response = await _customerService.GetByUserIdAsync(userId);
+        var response = await _customerService.GetByUserIdAsync(targetUserId);
         return response.Success ? Ok(response) : NotFound(response);
     }
 }
