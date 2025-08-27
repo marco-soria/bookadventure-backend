@@ -81,11 +81,10 @@ public class ApplicationDbContext : IdentityDbContext<BookAdventureUserIdentity>
                 
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
                 
-                // Configure Status property with sentinel value for proper default handling
+                // Configure Status property with default value
                 modelBuilder.Entity(entityType.ClrType)
                     .Property(nameof(BaseEntity.Status))
-                    .HasDefaultValue(EntityStatus.Active)
-                    .HasSentinel(EntityStatus.Inactive); // Use Inactive as sentinel
+                    .HasDefaultValue(EntityStatus.Active);
                     
                 modelBuilder.Entity(entityType.ClrType)
                     .Property(nameof(BaseEntity.CreatedAt))

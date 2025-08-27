@@ -498,7 +498,7 @@ dotnet run --project src/BookAdventure.Api
 #### Soft Deletion System
 
 - **BaseEntity Pattern**: All entities inherit from `BaseEntity` with `EntityStatus` enum
-- **Status Values**: `Active`, `Inactive`, `Deleted`
+- **Status Values**: `Active`, `Deleted`
 - **Query Filtering**: Automatic exclusion of deleted entities from standard queries
 - **Include Deleted**: Special queries to access deleted entities for restoration
 
@@ -645,7 +645,6 @@ The system implements a sophisticated dual-state management approach:
 **Entity Status** (BaseEntity.Status):
 
 - `Active`: Entity exists and is available for normal operations
-- `Inactive`: Entity temporarily disabled but still accessible
 - `Deleted`: Soft-deleted entity, excluded from normal queries, available for restoration
 
 **Order Status** (RentalOrder.OrderStatus):

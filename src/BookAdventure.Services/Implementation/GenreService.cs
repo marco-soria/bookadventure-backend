@@ -123,7 +123,7 @@ public class GenreService : BaseService<Genre>, IGenreService
             var genre = new Genre
             {
                 Name = request.Name,
-                Status = request.Status ? EntityStatus.Active : EntityStatus.Inactive
+                Status = request.Status ? EntityStatus.Active : EntityStatus.Deleted
             };
             
             var createdGenre = await _genreRepository.CreateAsync(genre);
@@ -176,7 +176,7 @@ public class GenreService : BaseService<Genre>, IGenreService
             // Update status only if provided
             if (request.Status.HasValue)
             {
-                existingGenre.Status = request.Status.Value ? EntityStatus.Active : EntityStatus.Inactive;
+                existingGenre.Status = request.Status.Value ? EntityStatus.Active : EntityStatus.Deleted;
             }
 
             existingGenre.UpdatedAt = DateTime.UtcNow;

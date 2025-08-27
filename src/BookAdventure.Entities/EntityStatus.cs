@@ -6,17 +6,12 @@ namespace BookAdventure.Entities;
 public enum EntityStatus
 {
     /// <summary>
-    /// Entidad activa y disponible
+    /// Entidad activa y disponible para operaciones normales
     /// </summary>
     Active = 1,
 
     /// <summary>
-    /// Entidad inactiva (suspendida temporalmente)
+    /// Entidad eliminada lógicamente (soft delete)
     /// </summary>
-    Inactive = 2,
-
-    /// <summary>
-    /// Entidad eliminada lógicamente
-    /// </summary>
-    Deleted = 3
+    Deleted = 2
 }
