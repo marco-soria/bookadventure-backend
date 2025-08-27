@@ -32,8 +32,8 @@ private readonly IServiceProvider service;
         //Admin user
         var adminUser = new BookAdventureUserIdentity()
         {
-            FirstName = "System",
-            LastName = "Administrator",
+            FirstName = "Admin",
+            LastName = "Admin",
             UserName = "admin@gmail.com",
             Email = "admin@gmail.com",
             PhoneNumber = "123456789",

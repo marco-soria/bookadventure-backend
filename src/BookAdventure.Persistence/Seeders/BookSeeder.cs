@@ -102,7 +102,7 @@ public class BookSeeder
                     // Technology Books
                     new() { Title = "Clean Code", Author = "Robert C. Martin", ISBN = "9780132350884", Description = "A handbook of agile software craftsmanship", Stock = 18, GenreId = technology.Id, ImageUrl = "https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg", IsAvailable = true },
                     new() { Title = "The Pragmatic Programmer", Author = "David Thomas", ISBN = "9780201616224", Description = "From journeyman to master", Stock = 21, GenreId = technology.Id, ImageUrl = "https://covers.openlibrary.org/b/isbn/9780201616224-L.jpg", IsAvailable = true },
-                    new() { Title = "Design Patterns", Author = "Gang of Four", ISBN = "9780201633612", Description = "Elements of reusable object-oriented software", Stock = 15, GenreId = technology.Id, ImageUrl = "https://covers.openlibrary.org/b/isbn/9780201633612-L.jpg", IsAvailable = true },
+                    new() { Title = "Design Patterns", Author = "Gang of Four", ISBN = "9780201633612", Description = "Elements of reusable object-oriented software", Stock = 15, GenreId = technology.Id, ImageUrl = "hhttps://ia600606.us.archive.org/view_archive.php?archive=/22/items/olcovers660/olcovers660-L.zip&file=6601119-L.jpg", IsAvailable = true },
                     new() { Title = "You Don't Know JS", Author = "Kyle Simpson", ISBN = "9781491924464", Description = "Up and going with JavaScript", Stock = 24, GenreId = technology.Id, ImageUrl = "https://covers.openlibrary.org/b/isbn/9781491924464-L.jpg", IsAvailable = true }
                 };
 
