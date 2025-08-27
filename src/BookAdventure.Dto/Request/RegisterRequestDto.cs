@@ -19,9 +19,12 @@ public class RegisterRequestDto
     [Required]
     public string DocumentNumber { get; set; } = default!;
 
-    
-
+    [Required(ErrorMessage = "Age is required")]
+    [Range(18, 120, ErrorMessage = "Age must be between 18 and 120 years")]
     public int Age { get; set; }
+
+    [StringLength(20)]
+    public string? PhoneNumber { get; set; }
 
     [Required]
     public string Password { get; set; } = default!;

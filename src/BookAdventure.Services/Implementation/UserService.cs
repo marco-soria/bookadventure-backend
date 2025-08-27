@@ -89,7 +89,7 @@ public class UserService : IUserService
                     LastName = request.LastName,
                     DNI = request.DocumentNumber,
                     Age = request.Age,
-                    PhoneNumber = null // Can be updated later
+                    PhoneNumber = request.PhoneNumber // Use phone number from request
                 };
 
                 // Map to Customer entity and set UserId
