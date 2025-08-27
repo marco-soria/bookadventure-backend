@@ -215,13 +215,26 @@ public class RentalOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Delete rental order - Admin only
+    /// Delete rental order (Soft Delete) - Admin only
+    /// This performs logical deletion for audit purposes
     /// </summary>
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> Delete(int id)
     {
         var response = await _rentalOrderService.DeleteAsync(id);
+        return response.Success ? Ok(response) : BadRequest(response);
+    }
+
+    /// <summary>
+    /// Cancel rental order (Business Logic) - Admin only
+    /// This changes the order status to Cancelled and restores book stock
+    /// </summary>
+    [HttpPut("{id:int}/cancel")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> CancelRentalOrder(int id)
+    {
+        var response = await _rentalOrderService.CancelRentalOrderAsync(id);
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
@@ -347,6 +360,58 @@ public class RentalOrdersController : ControllerBase
         else
         {
             return BadRequest(response);
+        }
+    }
+
+    /// <summary>
+    /// Get all deleted rental orders - Admin only
+    /// </summary>
+    [HttpGet("deleted")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> GetDeleted([FromQuery] PaginationDto? pagination = null)
+    {
+        pagination ??= new PaginationDto();
+        
+        try
+        {
+            var response = await _rentalOrderService.GetDeletedRentalOrdersAsync(pagination);
+            
+            if (response.Success && response.TotalRecords.HasValue)
+            {
+                HttpContext.Response.Headers.Append("TotalRecordsQuantity", response.TotalRecords.Value.ToString());
+            }
+            
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving deleted rental orders");
+            return StatusCode(500, "Internal server error occurred while retrieving deleted rental orders.");
+        }
+    }
+
+    /// <summary>
+    /// Restore a deleted rental order - Admin only
+    /// </summary>
+    [HttpPut("{id:int}/restore")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> RestoreRentalOrder(int id)
+    {
+        try
+        {
+            var response = await _rentalOrderService.RestoreRentalOrderAsync(id);
+            
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            
+            return BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring rental order with ID {Id}", id);
+            return StatusCode(500, "Internal server error occurred while restoring the rental order.");
         }
     }
 }

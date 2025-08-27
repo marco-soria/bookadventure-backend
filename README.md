@@ -61,6 +61,17 @@ BookAdventure/
 - **Combined filters**: Use multiple filters simultaneously
 - **Pagination support**: Efficient handling of large result sets
 
+### 🔄 Data Recovery & Restoration System
+
+- ✅ **Soft deletion** for all major entities (Books, Customers, Genres, Rental Orders)
+- ✅ **Individual entity restoration** with business rule validation
+- ✅ **Bulk restoration operations** for multiple entities at once
+- ✅ **Deleted entities overview** with comprehensive statistics
+- ✅ **Conflict prevention** - duplicate name/DNI checking before restoration
+- ✅ **Admin-only access** - all restoration operations require admin privileges
+- ✅ **Detailed logging** for audit trails and troubleshooting
+- ✅ **Query optimization** - existing queries automatically exclude deleted entities
+
 ### 🏷️ Genre Management
 
 - ✅ Complete CRUD operations for book genres
@@ -185,6 +196,19 @@ GET    /api/books/genre/name/{genreName}/alphabetical     # Genre name + alphabe
 GET    /api/books/advanced-search                         # Combined filters and sorting
 ```
 
+#### 🔄 Restoration Endpoints
+
+```http
+GET    /api/books/deleted                             # List deleted books [Admin]
+PUT    /api/books/{id}/restore                        # Restore deleted book [Admin]
+```
+
+#### 📝 Example Requests
+
+```bash
+
+```
+
 **Advanced Search Parameters:**
 
 - `genreId` (int): Filter by genre ID
@@ -224,22 +248,30 @@ GET /api/books/advanced-search?genreId=1&search=magic&inStock=true&sortBy=title
 
 ### 🏷️ Genres API
 
-```
+```http
 GET    /api/genres             # List all genres
 GET    /api/genres/{id}        # Get genre details
-POST   /api/genres             # Create new genre
-PUT    /api/genres/{id}        # Update genre
-DELETE /api/genres/{id}        # Soft delete genre
+POST   /api/genres             # Create new genre [Admin]
+PUT    /api/genres/{id}        # Update genre [Admin]
+DELETE /api/genres/{id}        # Soft delete genre [Admin]
+
+# Restoration endpoints
+GET    /api/genres/deleted     # List deleted genres [Admin]
+PUT    /api/genres/{id}/restore # Restore deleted genre [Admin]
 ```
 
 ### 👥 Customers API
 
-```
-GET    /api/customers          # List customers with metrics
-GET    /api/customers/{id}     # Get customer details
-PUT    /api/customers/{id}     # Update customer
-DELETE /api/customers/{id}     # Soft delete customer
-GET    /api/customers/{dni}/rented-books  # Get rented books by DNI
+```http
+GET    /api/customers          # List customers with metrics [Admin]
+GET    /api/customers/{id}     # Get customer details [User - own/Admin]
+PUT    /api/customers/{id}     # Update customer [User - own/Admin]
+DELETE /api/customers/{id}     # Soft delete customer [Admin]
+GET    /api/customers/{dni}/rented-books  # Get rented books by DNI [Admin]
+
+# Restoration endpoints
+GET    /api/customers/deleted  # List deleted customers [Admin]
+PUT    /api/customers/{id}/restore # Restore deleted customer [Admin]
 ```
 
 ### 📋 Rental Orders API
@@ -251,10 +283,51 @@ POST   /api/rentalorders                    # Create rental order [User - own or
 POST   /api/rentalorders/create-for-me      # Create order for current user [User]
 POST   /api/rentalorders/rent-single-book   # Rent single book [User - own orders]
 PUT    /api/rentalorders/{id}               # Update order [Admin]
-DELETE /api/rentalorders/{id}               # Cancel order [Admin]
+DELETE /api/rentalorders/{id}               # Soft delete order [Admin]
+PUT    /api/rentalorders/{id}/cancel        # Cancel order (business logic) [Admin]
 POST   /api/rentalorders/{id}/return        # Return books [User - own orders/Admin]
 GET    /api/rentalorders/my-orders          # Get user's rental orders [User]
 GET    /api/rentalorders/overdue            # Get overdue rentals [Admin]
+
+# Restoration endpoints
+GET    /api/rentalorders/deleted            # List deleted rental orders [Admin]
+PUT    /api/rentalorders/{id}/restore       # Restore deleted rental order [Admin]
+```
+
+#### 🔄 Rental Order Lifecycle
+
+| Action             | Endpoint              | OrderStatus Change | EntityStatus | Description                     |
+| ------------------ | --------------------- | ------------------ | ------------ | ------------------------------- |
+| **Create**         | `POST /create-for-me` | → `Active`         | `Active`     | New rental order                |
+| **Return Partial** | `POST /{id}/return`   | `Active`           | `Active`     | Some books returned             |
+| **Return All**     | `POST /{id}/return`   | → `Returned`       | `Active`     | All books returned              |
+| **Cancel**         | `PUT /{id}/cancel`    | → `Cancelled`      | `Active`     | Order cancelled, stock restored |
+| **Soft Delete**    | `DELETE /{id}`        | (unchanged)        | → `Deleted`  | Removed from normal queries     |
+| **Restore**        | `PUT /{id}/restore`   | (unchanged)        | → `Active`   | Restored to normal queries      |
+
+#### 📦 Return Books Request Format
+
+```json
+[1, 2, 3] // Array of book IDs to return
+```
+
+### 🛡️ Admin Management API
+
+```http
+GET    /api/admin/deleted-summary           # Get summary of deleted entities [Admin]
+GET    /api/admin/deleted-entities          # Get detailed deleted entities [Admin]
+POST   /api/admin/bulk-restore              # Bulk restore multiple entities [Admin]
+```
+
+#### 🔄 Bulk Restore Request Format
+
+```json
+{
+  "bookIds": [1, 2, 3],
+  "customerIds": [4, 5],
+  "genreIds": [6],
+  "rentalOrderIds": [7, 8, 9]
+}
 ```
 
 ### 🔐 Users API
@@ -370,6 +443,33 @@ dotnet run --project src/BookAdventure.Api
 - **DTO Pattern** - Optimized data transfer
 - **Dependency Injection** - Loose coupling
 - **Factory Pattern** - Object creation abstraction
+- **Soft Delete Pattern** - Data preservation with logical deletion
+
+### 🔄 Data Recovery Architecture
+
+#### Soft Deletion System
+
+- **BaseEntity Pattern**: All entities inherit from `BaseEntity` with `EntityStatus` enum
+- **Status Values**: `Active`, `Inactive`, `Deleted`
+- **Query Filtering**: Automatic exclusion of deleted entities from standard queries
+- **Include Deleted**: Special queries to access deleted entities for restoration
+
+#### Restoration Validation
+
+```csharp
+// Business Rule Examples
+- Books: Check for duplicate ISBN before restoration
+- Customers: Validate DNI uniqueness across active customers
+- Genres: Prevent duplicate genre names in active state
+- Rental Orders: Validate customer and book availability
+```
+
+#### Admin Safety Features
+
+- **Role-based Access**: Only admin users can access restoration endpoints
+- **Conflict Detection**: Automatic validation prevents business rule violations
+- **Audit Logging**: All restoration operations are logged for compliance
+- **Batch Operations**: Bulk restore with individual result tracking
 
 ### 📈 Advanced Features
 
@@ -468,6 +568,8 @@ The API is configured to accept requests from any origin during development. Upd
 
 ### 🆕 Latest Features (August 2025)
 
+#### 🔍 Advanced Search & Filtering
+
 - **Genre Name Filtering**: Search by genre names like "Fantasy", "Science Fiction"
 - **Advanced Search Endpoint**: Combine multiple filters in a single request
 - **Alphabetical Sorting**: Sort books A-Z or Z-A by title, author, or genre
@@ -476,6 +578,37 @@ The API is configured to accept requests from any origin during development. Upd
 - **Text Search**: Search across title, author, and description fields
 - **Flexible Pagination**: Efficient handling of large datasets
 - **Frontend Examples**: Complete integration examples for React, Angular, Vue
+
+#### 🔄 Data Recovery System
+
+- **Comprehensive Restoration**: Restore deleted Books, Customers, Genres, and Rental Orders
+- **Admin Dashboard Endpoints**: View deleted entities summary and detailed lists
+- **Bulk Restoration**: Restore multiple entities simultaneously with individual success tracking
+- **Business Rule Validation**: Prevent conflicts when restoring (duplicate names, DNIs, etc.)
+- **Audit Trail**: Complete logging of all restoration operations
+- **Query Optimization**: Existing endpoints automatically exclude deleted entities
+- **Safety Features**: Admin-only access with comprehensive error handling
+- **State Management**: Clear separation between business logic states and entity lifecycle states
+
+#### 🎯 Entity State Management
+
+The system implements a sophisticated dual-state management approach:
+
+**Entity Status** (BaseEntity.Status):
+
+- `Active`: Entity exists and is available for normal operations
+- `Inactive`: Entity temporarily disabled but still accessible
+- `Deleted`: Soft-deleted entity, excluded from normal queries, available for restoration
+
+**Order Status** (RentalOrder.OrderStatus):
+
+- `Pending`: Order created but not yet processed
+- `Active`: Order in progress, books are rented out
+- `Returned`: All books have been returned successfully
+- `Overdue`: Order has passed due date with unreturned books
+- `Cancelled`: Order was cancelled, stock restored, but remains in system for audit
+
+**Key Principle**: Cancelled orders remain `EntityStatus.Active` for business intelligence, auditing, and customer service purposes while clearly marked as `OrderStatus.Cancelled` for operational logic.
 
 ## 🌐 Frontend Integration
 

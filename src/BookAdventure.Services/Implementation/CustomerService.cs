@@ -361,4 +361,105 @@ public class CustomerService : ICustomerService
     public async Task<bool> ExistsAsync(int id) => await _customerRepository.ExistsAsync(id);
     public async Task<int> CountAsync() => await _customerRepository.CountAsync();
     public async Task<int> CountIncludingDeletedAsync() => await _customerRepository.CountIncludingDeletedAsync();
+
+    /// <summary>
+    /// Obtiene todos los clientes eliminados lógicamente con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> GetDeletedCustomersAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _customerRepository.QueryIncludingDeleted()
+                .Where(c => c.Status == EntityStatus.Deleted);
+
+            var totalRecords = await query.CountAsync();
+
+            var customers = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = _mapper.Map<ICollection<CustomerResponseDto>>(customers);
+
+            return new BaseResponseGeneric<ICollection<CustomerResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<CustomerResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving deleted customers: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Restaura un cliente eliminado lógicamente
+    /// </summary>
+    public async Task<BaseResponse> RestoreCustomerAsync(int id)
+    {
+        try
+        {
+            var customer = await _customerRepository.GetByIdIncludingDeletedAsync(id);
+            if (customer == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Customer not found"
+                };
+            }
+
+            if (customer.Status != EntityStatus.Deleted)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Customer is not deleted"
+                };
+            }
+
+            // Verificar si ya existe otro cliente activo con el mismo DNI
+            if (!string.IsNullOrEmpty(customer.DNI))
+            {
+                var existingCustomerWithSameDni = await _customerRepository.GetByDniAsync(customer.DNI);
+                if (existingCustomerWithSameDni != null && existingCustomerWithSameDni.Id != id)
+                {
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Another active customer with the same DNI already exists"
+                    };
+                }
+            }
+
+            var result = await _customerRepository.RestoreAsync(id);
+            if (result)
+            {
+                return new BaseResponse
+                {
+                    Success = true
+                };
+            }
+
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = "Failed to restore customer"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error restoring customer: {ex.Message}"
+            };
+        }
+    }
 }

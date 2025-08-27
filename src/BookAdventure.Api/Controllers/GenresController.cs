@@ -74,4 +74,57 @@ public class GenresController : ControllerBase
         var response = await _genreService.DeleteAsync(id);
         return response.Success ? Ok(response) : BadRequest(response);
     }
+
+    /// <summary>
+    /// Get all deleted genres - Admin only
+    /// </summary>
+    [HttpGet("deleted")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> GetDeleted([FromQuery] PaginationDto? pagination = null)
+    {
+        pagination ??= new PaginationDto();
+        
+        try
+        {
+            var response = await _genreService.GetDeletedGenresAsync(pagination);
+            
+            if (response.Success && response.TotalRecords.HasValue)
+            {
+                HttpContext.Response.Headers.Append("TotalRecordsQuantity", response.TotalRecords.Value.ToString());
+            }
+            
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting deleted genres");
+            return StatusCode(500, "Internal server error occurred while retrieving deleted genres.");
+        }
+    }
+
+    /// <summary>
+    /// Restore a deleted genre - Admin only
+    /// </summary>
+    [HttpPut("{id:int}/restore")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> RestoreGenre(int id)
+    {
+        try
+        {
+            var response = await _genreService.RestoreGenreAsync(id);
+            
+            if (response.Success)
+            {
+                _logger.LogInformation("Genre with ID {GenreId} has been restored", id);
+                return Ok(response);
+            }
+            
+            return BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring genre with ID {GenreId}", id);
+            return StatusCode(500, "Internal server error occurred while restoring the genre.");
+        }
+    }
 }

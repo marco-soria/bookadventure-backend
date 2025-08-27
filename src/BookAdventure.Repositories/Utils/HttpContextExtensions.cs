@@ -11,6 +11,6 @@ public static class HttpContextExtensions
             throw new ArgumentNullException(nameof(httpContext));
 
         List<T> totalRecords = await queryable.ToListAsync();
-        httpContext.Response.Headers.Add("TotalRecordsQuantity", totalRecords.Count.ToString());//ojo con el nombre del parámetro que usaremos, más adelante lo usaremos en CORS
+        httpContext.Response.Headers.Append("TotalRecordsQuantity", totalRecords.Count.ToString());//ojo con el nombre del parámetro que usaremos, más adelante lo usaremos en CORS
     }
 }

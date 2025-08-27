@@ -532,4 +532,106 @@ public class BookService : IBookService
     public async Task<bool> ExistsAsync(int id) => await _bookRepository.ExistsAsync(id);
     public async Task<int> CountAsync() => await _bookRepository.CountAsync();
     public async Task<int> CountIncludingDeletedAsync() => await _bookRepository.CountIncludingDeletedAsync();
+
+    /// <summary>
+    /// Obtiene todos los libros eliminados lógicamente con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> GetDeletedBooksAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _bookRepository.QueryIncludingDeleted()
+                .Where(b => b.Status == EntityStatus.Deleted)
+                .Include(b => b.Genre);
+
+            var totalRecords = await query.CountAsync();
+
+            var books = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                Status = book.Status == EntityStatus.Active,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
+
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving deleted books: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Restaura un libro eliminado lógicamente
+    /// </summary>
+    public async Task<BaseResponse> RestoreBookAsync(int id)
+    {
+        try
+        {
+            var book = await _bookRepository.GetByIdIncludingDeletedAsync(id);
+            if (book == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Book not found"
+                };
+            }
+
+            if (book.Status != EntityStatus.Deleted)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Book is not deleted"
+                };
+            }
+
+            var result = await _bookRepository.RestoreAsync(id);
+            if (result)
+            {
+                return new BaseResponse
+                {
+                    Success = true
+                };
+            }
+
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = "Failed to restore book"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error restoring book: {ex.Message}"
+            };
+        }
+    }
 }

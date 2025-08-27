@@ -16,4 +16,8 @@ public interface IBookService : IBaseService<Book>
     Task<BaseResponseGeneric<List<BookResponseDto>>> GetByGenreAsync(int genreId, PaginationDto pagination);
     Task<BaseResponseGeneric<List<BookResponseDto>>> GetByGenreNameAsync(string genreName, PaginationDto pagination);
     Task<BaseResponseGeneric<List<BookResponseDto>>> GetBooksWithFiltersAsync(BookSearchDto searchFilters);
+    
+    // Métodos para manejo de eliminación lógica
+    Task<BaseResponseGeneric<List<BookResponseDto>>> GetDeletedBooksAsync(PaginationDto pagination);
+    Task<BaseResponse> RestoreBookAsync(int id);
 }

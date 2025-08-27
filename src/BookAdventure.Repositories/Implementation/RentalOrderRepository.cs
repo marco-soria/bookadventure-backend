@@ -57,6 +57,16 @@ public class RentalOrderRepository : BaseRepository<RentalOrder>, IRentalOrderRe
             .FirstOrDefaultAsync(ro => ro.Id == id);
     }
 
+    public async Task<RentalOrder?> GetWithDetailsIncludingDeletedAsync(int id)
+    {
+        return await _context.IncludeDeleted<RentalOrder>()
+            .Include(ro => ro.Customer)
+            .Include(ro => ro.RentalOrderDetails)
+                .ThenInclude(rod => rod.Book)
+                    .ThenInclude(b => b.Genre)
+            .FirstOrDefaultAsync(ro => ro.Id == id);
+    }
+
     public override async Task<RentalOrder?> GetByIdAsync(int id)
     {
         return await GetWithDetailsAsync(id);

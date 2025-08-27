@@ -8,4 +8,5 @@ public interface IRentalOrderRepository : IBaseRepository<RentalOrder>
     Task<IEnumerable<RentalOrder>> GetOverdueRentalsAsync();
     Task<IEnumerable<RentalOrder>> GetActiveRentalsAsync();
     Task<RentalOrder?> GetWithDetailsAsync(int id);
+    Task<RentalOrder?> GetWithDetailsIncludingDeletedAsync(int id);
 }

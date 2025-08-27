@@ -117,4 +117,57 @@ public class CustomersController : ControllerBase
         var response = await _customerService.GetRentedBooksByDniAsync(dni);
         return response.Success ? Ok(response) : NotFound(response);
     }
+
+    /// <summary>
+    /// Get all deleted customers - Admin only
+    /// </summary>
+    [HttpGet("deleted")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> GetDeleted([FromQuery] PaginationDto? pagination = null)
+    {
+        pagination ??= new PaginationDto();
+        
+        try
+        {
+            var response = await _customerService.GetDeletedCustomersAsync(pagination);
+            
+            if (response.Success && response.TotalRecords.HasValue)
+            {
+                HttpContext.Response.Headers.Append("TotalRecordsQuantity", response.TotalRecords.Value.ToString());
+            }
+            
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting deleted customers");
+            return StatusCode(500, "Internal server error occurred while retrieving deleted customers.");
+        }
+    }
+
+    /// <summary>
+    /// Restore a deleted customer - Admin only
+    /// </summary>
+    [HttpPut("{id:int}/restore")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> RestoreCustomer(int id)
+    {
+        try
+        {
+            var response = await _customerService.RestoreCustomerAsync(id);
+            
+            if (response.Success)
+            {
+                _logger.LogInformation("Customer with ID {CustomerId} has been restored", id);
+                return Ok(response);
+            }
+            
+            return BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring customer with ID {CustomerId}", id);
+            return StatusCode(500, "Internal server error occurred while restoring the customer.");
+        }
+    }
 }

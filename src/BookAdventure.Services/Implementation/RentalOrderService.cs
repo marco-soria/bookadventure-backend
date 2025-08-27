@@ -390,6 +390,83 @@ public class RentalOrderService : IRentalOrderService
     {
         try
         {
+            var rentalOrder = await _rentalOrderRepository.GetWithDetailsIncludingDeletedAsync(id);
+            if (rentalOrder == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Rental order not found"
+                };
+            }
+
+            // Check if already deleted
+            if (rentalOrder.Status == EntityStatus.Deleted)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Rental order is already deleted"
+                };
+            }
+
+            // Only allow deleting active, returned, overdue orders (not cancelled ones as they're already processed)
+            if (rentalOrder.OrderStatus == OrderStatus.Active || 
+                rentalOrder.OrderStatus == OrderStatus.Returned || 
+                rentalOrder.OrderStatus == OrderStatus.Overdue ||
+                rentalOrder.OrderStatus == OrderStatus.Pending)
+            {
+                // If it's an active order, restore book stock for cancelled orders
+                if (rentalOrder.OrderStatus == OrderStatus.Active || rentalOrder.OrderStatus == OrderStatus.Pending)
+                {
+                    foreach (var detail in rentalOrder.RentalOrderDetails.Where(d => !d.IsReturned))
+                    {
+                        var book = await _bookRepository.GetByIdAsync(detail.BookId);
+                        if (book != null)
+                        {
+                            book.Stock += detail.Quantity;
+                            book.IsAvailable = book.Stock > 0;
+                            await _bookRepository.UpdateAsync(book);
+                        }
+                    }
+                }
+
+                // Soft delete the rental order
+                var deleteResult = await _rentalOrderRepository.SoftDeleteAsync(id);
+                if (deleteResult)
+                {
+                    return new BaseResponse { Success = true };
+                }
+                else
+                {
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Failed to delete rental order"
+                    };
+                }
+            }
+
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = "Cannot delete cancelled rental orders"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error deleting rental order: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<BaseResponse> CancelRentalOrderAsync(int id)
+    {
+        try
+        {
             var rentalOrder = await _rentalOrderRepository.GetWithDetailsAsync(id);
             if (rentalOrder == null)
             {
@@ -424,7 +501,7 @@ public class RentalOrderService : IRentalOrderService
             return new BaseResponse
             {
                 Success = false,
-                ErrorMessage = "Cannot cancel completed rental orders"
+                ErrorMessage = "Cannot cancel completed or already cancelled rental orders"
             };
         }
         catch (Exception ex)
@@ -575,4 +652,94 @@ public class RentalOrderService : IRentalOrderService
     public async Task<bool> ExistsAsync(int id) => await _rentalOrderRepository.ExistsAsync(id);
     public async Task<int> CountAsync() => await _rentalOrderRepository.CountAsync();
     public async Task<int> CountIncludingDeletedAsync() => await _rentalOrderRepository.CountIncludingDeletedAsync();
+
+    /// <summary>
+    /// Obtiene todas las órdenes de alquiler eliminadas lógicamente con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetDeletedRentalOrdersAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _rentalOrderRepository.QueryIncludingDeleted()
+                .Where(ro => ro.Status == EntityStatus.Deleted)
+                .Include(ro => ro.Customer)
+                .Include(ro => ro.RentalOrderDetails)
+                    .ThenInclude(rod => rod.Book);
+
+            var totalRecords = await query.CountAsync();
+
+            var rentalOrders = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = _mapper.Map<ICollection<RentalOrderResponseDto>>(rentalOrders);
+
+            return new BaseResponseGeneric<ICollection<RentalOrderResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<RentalOrderResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving deleted rental orders: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Restaura una orden de alquiler eliminada lógicamente
+    /// </summary>
+    public async Task<BaseResponse> RestoreRentalOrderAsync(int id)
+    {
+        try
+        {
+            var rentalOrder = await _rentalOrderRepository.GetByIdIncludingDeletedAsync(id);
+            if (rentalOrder == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Rental order not found"
+                };
+            }
+
+            if (rentalOrder.Status != EntityStatus.Deleted)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Rental order is not deleted"
+                };
+            }
+
+            var result = await _rentalOrderRepository.RestoreAsync(id);
+            if (result)
+            {
+                return new BaseResponse
+                {
+                    Success = true
+                };
+            }
+
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = "Failed to restore rental order"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error restoring rental order: {ex.Message}"
+            };
+        }
+    }
 }

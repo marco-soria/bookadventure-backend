@@ -309,4 +309,57 @@ public class BooksController : ControllerBase
         
         return response.Success ? Ok(response) : BadRequest(response);
     }
+
+    /// <summary>
+    /// Get all deleted books - Admin only
+    /// </summary>
+    [HttpGet("deleted")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> GetDeleted([FromQuery] PaginationDto? pagination = null)
+    {
+        pagination ??= new PaginationDto();
+        
+        try
+        {
+            var response = await _bookService.GetDeletedBooksAsync(pagination);
+            
+            if (response.Success && response.TotalRecords.HasValue)
+            {
+                HttpContext.Response.Headers.Append("TotalRecordsQuantity", response.TotalRecords.Value.ToString());
+            }
+            
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting deleted books");
+            return StatusCode(500, "Internal server error occurred while retrieving deleted books.");
+        }
+    }
+
+    /// <summary>
+    /// Restore a deleted book - Admin only
+    /// </summary>
+    [HttpPut("{id:int}/restore")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> RestoreBook(int id)
+    {
+        try
+        {
+            var response = await _bookService.RestoreBookAsync(id);
+            
+            if (response.Success)
+            {
+                _logger.LogInformation("Book with ID {BookId} has been restored", id);
+                return Ok(response);
+            }
+            
+            return BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring book with ID {BookId}", id);
+            return StatusCode(500, "Internal server error occurred while restoring the book.");
+        }
+    }
 }

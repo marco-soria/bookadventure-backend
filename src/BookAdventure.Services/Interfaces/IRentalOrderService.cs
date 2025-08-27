@@ -12,7 +12,12 @@ public interface IRentalOrderService : IBaseService<RentalOrder>
     Task<RentalOrderCreationResponseDto> CreateRentalOrderAsync(RentalOrderRequestDto request);
     Task<BaseResponse> UpdateAsync(int id, RentalOrderUpdateRequestDto request);
     Task<BaseResponse> DeleteAsync(int id);
+    Task<BaseResponse> CancelRentalOrderAsync(int id);
     Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetByCustomerAsync(int customerId, PaginationDto pagination);
     Task<BaseResponse> ReturnBooksAsync(int rentalOrderId, List<int> bookIds);
     Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetOverdueRentalsAsync(PaginationDto pagination);
+    
+    // Métodos para manejo de eliminación lógica
+    Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetDeletedRentalOrdersAsync(PaginationDto pagination);
+    Task<BaseResponse> RestoreRentalOrderAsync(int id);
 }

@@ -15,4 +15,8 @@ public interface ICustomerService : IBaseService<Customer>
     Task<BaseResponseGeneric<CustomerResponseDto>> GetByUserIdAsync(string userId);
     Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> SearchByNameAsync(string namePattern);
     Task<BaseResponseGeneric<ICollection<RentedBookResponseDto>>> GetRentedBooksByDniAsync(string dni);
+    
+    // Métodos para manejo de eliminación lógica
+    Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> GetDeletedCustomersAsync(PaginationDto pagination);
+    Task<BaseResponse> RestoreCustomerAsync(int id);
 }
