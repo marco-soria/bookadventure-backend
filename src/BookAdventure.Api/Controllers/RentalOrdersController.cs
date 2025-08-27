@@ -484,4 +484,29 @@ public class RentalOrdersController : ControllerBase
             return StatusCode(500, "Internal server error occurred while restoring the rental order.");
         }
     }
+
+    /// <summary>
+    /// Update rental order status - Admin only
+    /// </summary>
+    [HttpPut("{id:int}/status")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> UpdateRentalOrderStatus(int id, [FromBody] UpdateRentalOrderStatusDto request)
+    {
+        try
+        {
+            var response = await _rentalOrderService.UpdateRentalOrderStatusAsync(id, request.OrderStatus);
+            
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            
+            return BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating rental order status with ID {Id}", id);
+            return StatusCode(500, "Internal server error occurred while updating the rental order status.");
+        }
+    }
 }

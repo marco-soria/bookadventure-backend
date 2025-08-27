@@ -782,4 +782,99 @@ public class RentalOrderService : IRentalOrderService
             };
         }
     }
+
+    public async Task<BaseResponse> UpdateRentalOrderStatusAsync(int id, int orderStatus)
+    {
+        try
+        {
+            // Validate order status is within valid range
+            if (!Enum.IsDefined(typeof(OrderStatus), orderStatus))
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid order status"
+                };
+            }
+
+            var rentalOrder = await _rentalOrderRepository.GetByIdAsync(id);
+            if (rentalOrder == null)
+            {
+                return new BaseResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Rental order not found"
+                };
+            }
+
+            // Update the order status
+            rentalOrder.OrderStatus = (OrderStatus)orderStatus;
+
+            // Special logic for specific status changes
+            switch ((OrderStatus)orderStatus)
+            {
+                case OrderStatus.Returned:
+                    // When marking as returned, set return date and restore book availability
+                    rentalOrder.ReturnDate = DateTime.UtcNow;
+                    
+                    // Get all rental details and mark them as returned
+                    var rentalDetails = await _rentalOrderDetailRepository.Query()
+                        .Where(rd => rd.RentalOrderId == id)
+                        .ToListAsync();
+
+                    foreach (var detail in rentalDetails)
+                    {
+                        if (!detail.IsReturned)
+                        {
+                            detail.IsReturned = true;
+                            detail.ReturnDate = DateTime.UtcNow;
+                            
+                            // Restore book availability
+                            var book = await _bookRepository.GetByIdAsync(detail.BookId);
+                            if (book != null)
+                            {
+                                book.IsAvailable = true;
+                                await _bookRepository.UpdateAsync(book);
+                            }
+                            
+                            await _rentalOrderDetailRepository.UpdateAsync(detail);
+                        }
+                    }
+                    break;
+
+                case OrderStatus.Cancelled:
+                    // When cancelling, restore book availability for non-returned books
+                    var cancelDetails = await _rentalOrderDetailRepository.Query()
+                        .Where(rd => rd.RentalOrderId == id && !rd.IsReturned)
+                        .ToListAsync();
+
+                    foreach (var detail in cancelDetails)
+                    {
+                        var book = await _bookRepository.GetByIdAsync(detail.BookId);
+                        if (book != null)
+                        {
+                            book.IsAvailable = true;
+                            await _bookRepository.UpdateAsync(book);
+                        }
+                    }
+                    break;
+            }
+
+            await _rentalOrderRepository.UpdateAsync(rentalOrder);
+
+            return new BaseResponse
+            {
+                Success = true,
+                ErrorMessage = "Rental order status updated successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponse
+            {
+                Success = false,
+                ErrorMessage = $"Error updating rental order status: {ex.Message}"
+            };
+        }
+    }
 }

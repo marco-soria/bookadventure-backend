@@ -23,4 +23,7 @@ public interface IRentalOrderService : IBaseService<RentalOrder>
     
     // Método para admin panel
     Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetAllRentalOrdersForAdminAsync(PaginationDto pagination);
+    
+    // Método para actualizar status de rental order
+    Task<BaseResponse> UpdateRentalOrderStatusAsync(int id, int orderStatus);
 }
