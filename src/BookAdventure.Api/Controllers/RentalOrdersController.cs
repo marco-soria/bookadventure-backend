@@ -364,6 +364,33 @@ public class RentalOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Get all rental orders for admin panel (including deleted) - Admin only
+    /// </summary>
+    [HttpGet("admin/all")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> GetAllForAdmin([FromQuery] PaginationDto? pagination = null)
+    {
+        pagination ??= new PaginationDto();
+        
+        try
+        {
+            var response = await _rentalOrderService.GetAllRentalOrdersForAdminAsync(pagination);
+            
+            if (response.Success && response.TotalRecords.HasValue)
+            {
+                HttpContext.Response.Headers.Append("TotalRecordsQuantity", response.TotalRecords.Value.ToString());
+            }
+            
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all rental orders for admin");
+            return StatusCode(500, "Internal server error occurred while retrieving all rental orders.");
+        }
+    }
+
+    /// <summary>
     /// Get all deleted rental orders - Admin only
     /// </summary>
     [HttpGet("deleted")]

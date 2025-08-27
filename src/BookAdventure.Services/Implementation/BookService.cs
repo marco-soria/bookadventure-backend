@@ -634,4 +634,56 @@ public class BookService : IBookService
             };
         }
     }
+
+    /// <summary>
+    /// Obtiene todos los libros para el panel de admin (incluyendo eliminados) con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<List<BookResponseDto>>> GetAllBooksForAdminAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _bookRepository.QueryIncludingDeleted()
+                .Include(b => b.Genre)
+                .OrderBy(b => b.Id); // Orden consistente
+
+            var totalRecords = await query.CountAsync();
+
+            var books = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = books.Select(book => new BookResponseDto
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                Description = book.Description,
+                Stock = book.Stock,
+                ImageUrl = book.ImageUrl,
+                IsAvailable = book.IsAvailable,
+                Status = book.Status == EntityStatus.Active, // true = activo, false = eliminado
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                GenreId = book.GenreId,
+                GenreName = book.Genre?.Name ?? string.Empty
+            }).ToList();
+
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<List<BookResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving all books for admin: {ex.Message}"
+            };
+        }
+    }
 }

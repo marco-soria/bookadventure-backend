@@ -76,6 +76,33 @@ public class GenresController : ControllerBase
     }
 
     /// <summary>
+    /// Get all genres for admin panel (including deleted) - Admin only
+    /// </summary>
+    [HttpGet("admin/all")]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> GetAllForAdmin([FromQuery] PaginationDto? pagination = null)
+    {
+        pagination ??= new PaginationDto();
+        
+        try
+        {
+            var response = await _genreService.GetAllGenresForAdminAsync(pagination);
+            
+            if (response.Success && response.TotalRecords.HasValue)
+            {
+                HttpContext.Response.Headers.Append("TotalRecordsQuantity", response.TotalRecords.Value.ToString());
+            }
+            
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all genres for admin");
+            return StatusCode(500, "Internal server error occurred while retrieving all genres.");
+        }
+    }
+
+    /// <summary>
     /// Get all deleted genres - Admin only
     /// </summary>
     [HttpGet("deleted")]

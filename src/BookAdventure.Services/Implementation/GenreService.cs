@@ -331,4 +331,49 @@ public class GenreService : BaseService<Genre>, IGenreService
             };
         }
     }
+
+    /// <summary>
+    /// Obtiene todos los géneros para el panel de admin (incluyendo eliminados) con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<List<GenreResponseDto>>> GetAllGenresForAdminAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _genreRepository.QueryIncludingDeleted()
+                .Include(g => g.Books.Where(b => b.Status == EntityStatus.Active))
+                .OrderBy(g => g.Id); // Orden consistente
+
+            var totalRecords = await query.CountAsync();
+
+            var genres = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = genres.Select(genre => new GenreResponseDto
+            {
+                Id = genre.Id,
+                Name = genre.Name,
+                Status = genre.Status == EntityStatus.Active, // true = activo, false = eliminado
+                CreatedAt = genre.CreatedAt,
+                UpdatedAt = genre.UpdatedAt,
+                TotalBooks = genre.Books?.Count ?? 0
+            }).ToList();
+
+            return new BaseResponseGeneric<List<GenreResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<List<GenreResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving all genres for admin: {ex.Message}"
+            };
+        }
+    }
 }

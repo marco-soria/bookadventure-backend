@@ -20,4 +20,7 @@ public interface IRentalOrderService : IBaseService<RentalOrder>
     // Métodos para manejo de eliminación lógica
     Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetDeletedRentalOrdersAsync(PaginationDto pagination);
     Task<BaseResponse> RestoreRentalOrderAsync(int id);
+    
+    // Método para admin panel
+    Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetAllRentalOrdersForAdminAsync(PaginationDto pagination);
 }

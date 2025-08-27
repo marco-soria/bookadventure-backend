@@ -27,6 +27,7 @@ public class BookProfile : Profile
             .ForMember(dest => dest.ISBN, opt => opt.MapFrom(src => src.ISBN))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
             .ForMember(dest => dest.Stock, opt => opt.MapFrom(src => src.Stock))
+            .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailable))
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status == EntityStatus.Active))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))

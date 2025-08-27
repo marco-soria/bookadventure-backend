@@ -20,4 +20,7 @@ public interface IBookService : IBaseService<Book>
     // Métodos para manejo de eliminación lógica
     Task<BaseResponseGeneric<List<BookResponseDto>>> GetDeletedBooksAsync(PaginationDto pagination);
     Task<BaseResponse> RestoreBookAsync(int id);
+    
+    // Método para admin panel
+    Task<BaseResponseGeneric<List<BookResponseDto>>> GetAllBooksForAdminAsync(PaginationDto pagination);
 }

@@ -462,4 +462,58 @@ public class CustomerService : ICustomerService
             };
         }
     }
+
+    /// <summary>
+    /// Obtiene todos los clientes para el panel de admin (incluyendo eliminados) con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> GetAllCustomersForAdminAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _customerRepository.QueryIncludingDeleted()
+                .Include(c => c.RentalOrders)
+                .OrderBy(c => c.Id); // Orden consistente
+
+            var totalRecords = await query.CountAsync();
+
+            var customers = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = customers.Select(customer => new CustomerResponseDto
+            {
+                Id = customer.Id,
+                Email = customer.Email,
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                FullName = customer.FullName,
+                DNI = customer.DNI,
+                Age = customer.Age,
+                PhoneNumber = customer.PhoneNumber,
+                UserId = customer.UserId,
+                Status = customer.Status == EntityStatus.Active ? "Active" : "Deleted",
+                CreatedAt = customer.CreatedAt,
+                UpdatedAt = customer.UpdatedAt,
+                TotalRentalOrders = customer.RentalOrders?.Count ?? 0,
+                ActiveRentals = customer.RentalOrders?.Count(r => r.Status == EntityStatus.Active) ?? 0,
+                OverdueRentals = 0 // Por ahora 0, se puede calcular después
+            }).ToList();
+
+            return new BaseResponseGeneric<ICollection<CustomerResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<CustomerResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving all customers for admin: {ex.Message}"
+            };
+        }
+    }
 }

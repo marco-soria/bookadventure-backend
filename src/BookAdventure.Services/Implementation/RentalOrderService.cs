@@ -742,4 +742,44 @@ public class RentalOrderService : IRentalOrderService
             };
         }
     }
+
+    /// <summary>
+    /// Obtiene todas las órdenes de alquiler para el panel de admin (incluyendo eliminadas) con paginación
+    /// </summary>
+    public async Task<BaseResponseGeneric<ICollection<RentalOrderResponseDto>>> GetAllRentalOrdersForAdminAsync(PaginationDto pagination)
+    {
+        try
+        {
+            var query = _rentalOrderRepository.QueryIncludingDeleted()
+                .Include(ro => ro.Customer)
+                .Include(ro => ro.RentalOrderDetails)
+                .ThenInclude(rod => rod.Book)
+                .ThenInclude(b => b.Genre)
+                .OrderBy(ro => ro.Id); // Orden consistente
+
+            var totalRecords = await query.CountAsync();
+
+            var rentalOrders = await query
+                .Skip((pagination.Page - 1) * pagination.RecordsPerPage)
+                .Take(pagination.RecordsPerPage)
+                .ToListAsync();
+
+            var response = _mapper.Map<ICollection<RentalOrderResponseDto>>(rentalOrders);
+
+            return new BaseResponseGeneric<ICollection<RentalOrderResponseDto>>
+            {
+                Success = true,
+                Data = response,
+                TotalRecords = totalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            return new BaseResponseGeneric<ICollection<RentalOrderResponseDto>>
+            {
+                Success = false,
+                ErrorMessage = $"Error retrieving all rental orders for admin: {ex.Message}"
+            };
+        }
+    }
 }

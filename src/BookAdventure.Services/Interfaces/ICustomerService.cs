@@ -19,4 +19,7 @@ public interface ICustomerService : IBaseService<Customer>
     // Métodos para manejo de eliminación lógica
     Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> GetDeletedCustomersAsync(PaginationDto pagination);
     Task<BaseResponse> RestoreCustomerAsync(int id);
+    
+    // Método para admin panel
+    Task<BaseResponseGeneric<ICollection<CustomerResponseDto>>> GetAllCustomersForAdminAsync(PaginationDto pagination);
 }

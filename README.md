@@ -72,6 +72,16 @@ BookAdventure/
 - ✅ **Detailed logging** for audit trails and troubleshooting
 - ✅ **Query optimization** - existing queries automatically exclude deleted entities
 
+### 🎛️ Admin Panel Management System
+
+- ✅ **Unified admin endpoints** for comprehensive entity management
+- ✅ **Admin-specific pagination** showing both active and deleted entities
+- ✅ **Real-time status tracking** (Active/Deleted) across all modules
+- ✅ **Bulk operations support** for efficient administration
+- ✅ **Cross-entity restoration** with dependency validation
+- ✅ **Administrative oversight** - complete visibility of all system data
+- ✅ **Performance optimized** - efficient queries for large datasets
+
 ### 🏷️ Genre Management
 
 - ✅ Complete CRUD operations for book genres
@@ -167,6 +177,14 @@ PUT    /api/books/{id}         # Update book [Admin]
 DELETE /api/books/{id}         # Soft delete book [Admin]
 ```
 
+#### 🎛️ Admin Management Endpoints
+
+```http
+GET    /api/books/admin/all    # List ALL books (active + deleted) with pagination [Admin]
+PUT    /api/books/{id}/restore # Restore deleted book [Admin]
+GET    /api/books/deleted      # List only deleted books [Admin]
+```
+
 #### 🔍 Search & Filtering Endpoints
 
 ##### Basic Search
@@ -249,35 +267,37 @@ GET /api/books/advanced-search?genreId=1&search=magic&inStock=true&sortBy=title
 ### 🏷️ Genres API
 
 ```http
-GET    /api/genres             # List all genres
+GET    /api/genres             # List all active genres
 GET    /api/genres/{id}        # Get genre details
 POST   /api/genres             # Create new genre [Admin]
 PUT    /api/genres/{id}        # Update genre [Admin]
 DELETE /api/genres/{id}        # Soft delete genre [Admin]
 
-# Restoration endpoints
-GET    /api/genres/deleted     # List deleted genres [Admin]
+# Admin management endpoints
+GET    /api/genres/admin/all   # List ALL genres (active + deleted) with pagination [Admin]
 PUT    /api/genres/{id}/restore # Restore deleted genre [Admin]
+GET    /api/genres/deleted     # List only deleted genres [Admin]
 ```
 
 ### 👥 Customers API
 
 ```http
-GET    /api/customers          # List customers with metrics [Admin]
+GET    /api/customers          # List active customers with metrics [Admin]
 GET    /api/customers/{id}     # Get customer details [User - own/Admin]
 PUT    /api/customers/{id}     # Update customer [User - own/Admin]
 DELETE /api/customers/{id}     # Soft delete customer [Admin]
 GET    /api/customers/{dni}/rented-books  # Get rented books by DNI [Admin]
 
-# Restoration endpoints
-GET    /api/customers/deleted  # List deleted customers [Admin]
+# Admin management endpoints
+GET    /api/customers/admin/all # List ALL customers (active + deleted) with pagination [Admin]
 PUT    /api/customers/{id}/restore # Restore deleted customer [Admin]
+GET    /api/customers/deleted  # List only deleted customers [Admin]
 ```
 
 ### 📋 Rental Orders API
 
 ```http
-GET    /api/rentalorders                     # List rental orders [Admin]
+GET    /api/rentalorders                     # List active rental orders [Admin]
 GET    /api/rentalorders/{id}               # Get order details [Admin]
 POST   /api/rentalorders                    # Create rental order [User - own orders]
 POST   /api/rentalorders/create-for-me      # Create order for current user [User]
@@ -289,9 +309,10 @@ POST   /api/rentalorders/{id}/return        # Return books [User - own orders/Ad
 GET    /api/rentalorders/my-orders          # Get user's rental orders [User]
 GET    /api/rentalorders/overdue            # Get overdue rentals [Admin]
 
-# Restoration endpoints
-GET    /api/rentalorders/deleted            # List deleted rental orders [Admin]
+# Admin management endpoints
+GET    /api/rentalorders/admin/all          # List ALL rental orders (active + deleted) with pagination [Admin]
 PUT    /api/rentalorders/{id}/restore       # Restore deleted rental order [Admin]
+GET    /api/rentalorders/deleted            # List only deleted rental orders [Admin]
 ```
 
 #### 🔄 Rental Order Lifecycle
@@ -318,6 +339,33 @@ GET    /api/admin/deleted-summary           # Get summary of deleted entities [A
 GET    /api/admin/deleted-entities          # Get detailed deleted entities [Admin]
 POST   /api/admin/bulk-restore              # Bulk restore multiple entities [Admin]
 ```
+
+### 🎛️ Admin Panel Unified Endpoints
+
+All admin panel endpoints include both active and deleted entities for comprehensive management:
+
+```http
+# Books Management
+GET    /api/books/admin/all?page=1&recordsPerPage=10      # All books (active + deleted)
+
+# Genres Management
+GET    /api/genres/admin/all?page=1&recordsPerPage=10     # All genres (active + deleted)
+
+# Customers Management
+GET    /api/customers/admin/all?page=1&recordsPerPage=10  # All customers (active + deleted)
+
+# Rental Orders Management
+GET    /api/rentalorders/admin/all?page=1&recordsPerPage=10 # All rental orders (active + deleted)
+```
+
+**Key Features of Admin Endpoints:**
+
+- ✅ **Unified Data View**: See both active and deleted entities in one response
+- ✅ **Real-time Status**: Each entity includes accurate `status` field (true=active, false=deleted)
+- ✅ **Backend Pagination**: Efficient server-side pagination for large datasets
+- ✅ **Restore Capability**: Direct access to restoration endpoints from admin interface
+- ✅ **Performance Optimized**: Minimal queries with proper includes and ordering
+- ✅ **Admin Authorization**: All endpoints require admin role for security
 
 #### 🔄 Bulk Restore Request Format
 
@@ -391,7 +439,7 @@ GET    /api/users/my-rental-orders   # Get user's rental orders [User]
 
 ### ⚕️ Health Checks
 
-```
+```http
 GET    /healthcheck           # API health status
 ```
 
@@ -533,7 +581,7 @@ Role: User
 > - **JWT**: 15-60 minutes (900-3600 seconds)
 > - **Refresh Token**: 1-7 days
 
-### 🔄 Refresh Token Features
+### 🔄 Token Refresh Implementation
 
 - **Automatic Token Refresh**: Frontend automatically refreshes expired JWT tokens
 - **Secure Storage**: Refresh tokens stored securely in the database

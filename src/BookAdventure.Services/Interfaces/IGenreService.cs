@@ -16,4 +16,7 @@ public interface IGenreService : IBaseService<Genre>
     // Métodos para manejo de eliminación lógica
     Task<BaseResponseGeneric<List<GenreResponseDto>>> GetDeletedGenresAsync(PaginationDto pagination);
     Task<BaseResponse> RestoreGenreAsync(int id);
+    
+    // Método para admin panel
+    Task<BaseResponseGeneric<List<GenreResponseDto>>> GetAllGenresForAdminAsync(PaginationDto pagination);
 }
