@@ -105,9 +105,6 @@ BookAdventure/
 - ✅ **Return tracking** with dates and status
 - ✅ **Overdue rental reports** for library management
 - ✅ **Stock restoration** on book returns
-- ✅ **Advanced status management** - Pending, Active, Returned, Overdue, Cancelled
-- ✅ **Admin status control** - Change order status with business logic validation
-- ✅ **Automatic book availability** - Restore stock when orders are returned/cancelled
 
 ### 🎯 Advanced Rental Features
 
@@ -115,8 +112,6 @@ BookAdventure/
 - **Real-time stock validation**: Prevents over-booking of books
 - **Detailed responses**: Know exactly which books are available/unavailable
 - **HTTP status codes**: 201 (success), 206 (partial), 400 (failed)
-- **Status workflow**: Complete order lifecycle management from creation to completion
-- **Admin controls**: Full administrative control over order statuses and transitions
 
 ## 🛠️ Technology Stack
 
@@ -308,7 +303,6 @@ POST   /api/rentalorders                    # Create rental order [User - own or
 POST   /api/rentalorders/create-for-me      # Create order for current user [User]
 POST   /api/rentalorders/rent-single-book   # Rent single book [User - own orders]
 PUT    /api/rentalorders/{id}               # Update order [Admin]
-PUT    /api/rentalorders/{id}/status        # Update order status [Admin]
 DELETE /api/rentalorders/{id}               # Soft delete order [Admin]
 PUT    /api/rentalorders/{id}/cancel        # Cancel order (business logic) [Admin]
 POST   /api/rentalorders/{id}/return        # Return books [User - own orders/Admin]
@@ -320,34 +314,6 @@ GET    /api/rentalorders/admin/all          # List ALL rental orders (active + d
 PUT    /api/rentalorders/{id}/restore       # Restore deleted rental order [Admin]
 GET    /api/rentalorders/deleted            # List only deleted rental orders [Admin]
 ```
-
-#### 🎛️ Status Management Endpoint
-
-The new status management endpoint allows administrators to change rental order status with built-in business logic validation:
-
-```http
-PUT /api/rentalorders/{id}/status
-Content-Type: application/json
-Authorization: Bearer {admin-token}
-
-{
-  "status": 3  // OrderStatus enum value
-}
-```
-
-**Available Status Values:**
-- `1` - Pending: Order created but not yet processed
-- `2` - Active: Order in progress, books are rented out  
-- `3` - Returned: All books have been returned successfully
-- `4` - Overdue: Order has passed due date with unreturned books
-- `5` - Cancelled: Order was cancelled, stock restored
-
-**Business Logic Features:**
-- ✅ **Automatic Stock Restoration**: When status changes to Returned (3) or Cancelled (5), book stock is automatically restored
-- ✅ **Admin Authorization**: Only admin users can change order status
-- ✅ **Validation**: Prevents invalid status transitions
-- ✅ **Audit Trail**: All status changes are logged for compliance
-- ✅ **Error Handling**: Comprehensive error responses for invalid operations
 
 #### 🔄 Rental Order Lifecycle
 
@@ -671,17 +637,6 @@ The API is configured to accept requests from any origin during development. Upd
 - **Query Optimization**: Existing endpoints automatically exclude deleted entities
 - **Safety Features**: Admin-only access with comprehensive error handling
 - **State Management**: Clear separation between business logic states and entity lifecycle states
-
-#### 🎛️ Advanced Status Management System
-
-- **Admin Status Control**: New PUT /api/rentalorders/{id}/status endpoint for complete order lifecycle management
-- **Intelligent Business Logic**: Automatic stock restoration when orders are returned or cancelled
-- **Status Workflow**: Complete order status transitions (Pending → Active → Returned/Overdue/Cancelled)
-- **Authorization Security**: Admin-only access with role-based validation
-- **Audit Compliance**: Full logging of all status changes for business intelligence
-- **Error Prevention**: Comprehensive validation prevents invalid status transitions
-- **Stock Management**: Automatic book availability restoration for completed orders
-- **Frontend Ready**: DTO-based interface ready for admin panel integration
 
 #### 🎯 Entity State Management
 
