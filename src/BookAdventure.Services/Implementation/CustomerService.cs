@@ -216,6 +216,7 @@ public class CustomerService : ICustomerService
     {
         try
         {
+            // Use FindAsync to get customer by UserId
             var customers = await _customerRepository.FindAsync(c => c.UserId == userId);
             var customer = customers.FirstOrDefault();
 
@@ -228,7 +229,23 @@ public class CustomerService : ICustomerService
                 };
             }
 
-            var response = _mapper.Map<CustomerResponseDto>(customer);
+            // Get customer with RentalOrders using Query method
+            var customerWithRentals = await _customerRepository.Query()
+                .Where(c => c.Id == customer.Id)
+                .Include(c => c.RentalOrders)
+                .ThenInclude(ro => ro.RentalOrderDetails)
+                .FirstOrDefaultAsync();
+
+            if (customerWithRentals == null)
+            {
+                return new BaseResponseGeneric<CustomerResponseDto>
+                {
+                    Success = false,
+                    ErrorMessage = "Customer not found"
+                };
+            }
+
+            var response = _mapper.Map<CustomerResponseDto>(customerWithRentals);
 
             return new BaseResponseGeneric<CustomerResponseDto>
             {
