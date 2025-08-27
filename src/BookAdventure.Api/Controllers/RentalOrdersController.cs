@@ -131,18 +131,35 @@ public class RentalOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Create new rental order - Authenticated users only
+    /// Create new rental order - Authenticated users and admins
     /// Users can only create orders for their own customer account
+    /// Admins can create orders for any customer
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = "RequireUserRole")]
+    [Authorize] // Allow both users and admins
     public async Task<IActionResult> Post([FromBody] RentalOrderRequestDto request)
     {
-        // Validate user ownership of the customer ID in the request
-        var validation = await ValidateUserOwnershipAsync(request.CustomerId);
-        if (!validation.IsValid)
+        // Check if user is admin
+        var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        bool isAdmin = userRoles.Contains("Admin");
+
+        if (!isAdmin)
         {
-            return Unauthorized(validation.ErrorMessage);
+            // For regular users, validate ownership of the customer ID
+            var validation = await ValidateUserOwnershipAsync(request.CustomerId);
+            if (!validation.IsValid)
+            {
+                return Unauthorized(validation.ErrorMessage);
+            }
+        }
+        else
+        {
+            // For admins, just validate that the customer exists
+            var customerResponse = await _customerService.GetAsync(request.CustomerId);
+            if (!customerResponse.Success || customerResponse.Data == null)
+            {
+                return BadRequest("Customer not found");
+            }
         }
 
         var response = await _rentalOrderService.CreateRentalOrderAsync(request);
@@ -168,18 +185,35 @@ public class RentalOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Rent single book - Authenticated users only
+    /// Rent single book - Authenticated users and admins
     /// Users can only create orders for their own customer account
+    /// Admins can create orders for any customer
     /// </summary>
     [HttpPost("rent-single-book")]
-    [Authorize(Policy = "RequireUserRole")]
+    [Authorize] // Allow both users and admins
     public async Task<IActionResult> RentSingleBook([FromBody] SingleBookRentalRequestDto request)
     {
-        // Validate user ownership of the customer ID in the request
-        var validation = await ValidateUserOwnershipAsync(request.CustomerId);
-        if (!validation.IsValid)
+        // Check if user is admin
+        var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        bool isAdmin = userRoles.Contains("Admin");
+
+        if (!isAdmin)
         {
-            return Unauthorized(validation.ErrorMessage);
+            // For regular users, validate ownership of the customer ID
+            var validation = await ValidateUserOwnershipAsync(request.CustomerId);
+            if (!validation.IsValid)
+            {
+                return Unauthorized(validation.ErrorMessage);
+            }
+        }
+        else
+        {
+            // For admins, just validate that the customer exists
+            var customerResponse = await _customerService.GetAsync(request.CustomerId);
+            if (!customerResponse.Success || customerResponse.Data == null)
+            {
+                return BadRequest("Customer not found");
+            }
         }
 
         // Convert single book request to full rental order request
@@ -260,29 +294,38 @@ public class RentalOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Return books from rental order - Authenticated users (for their orders) or Admin
+    /// Return books from rental order - Authenticated users (for their orders) and admins
     /// </summary>
     [HttpPost("{id:int}/return")]
-    [Authorize(Policy = "RequireUserRole")]
+    [Authorize] // Allow both users and admins
     public async Task<IActionResult> ReturnBooks(int id, [FromBody] List<int> bookIds)
     {
-        // Validate user ownership of this rental order
-        var validation = await ValidateRentalOrderOwnershipAsync(id);
-        if (!validation.IsValid)
+        // Check if user is admin
+        var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        bool isAdmin = userRoles.Contains("Admin");
+
+        if (!isAdmin)
         {
-            return Unauthorized(validation.ErrorMessage);
+            // For regular users, validate ownership of this rental order
+            var validation = await ValidateRentalOrderOwnershipAsync(id);
+            if (!validation.IsValid)
+            {
+                return Unauthorized(validation.ErrorMessage);
+            }
         }
+        // Admins can return books from any rental order
 
         var response = await _rentalOrderService.ReturnBooksAsync(id, bookIds);
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
     /// <summary>
-    /// Get current user's rental orders - Authenticated users only
-    /// This is a safer alternative to GET /customer/{customerId} for regular users
+    /// Get current user's rental orders - Authenticated users and admins
+    /// For users: returns their own rental orders
+    /// For admins: can optionally pass customerId parameter to get specific customer's orders
     /// </summary>
     [HttpGet("my-orders")]
-    [Authorize(Policy = "RequireUserRole")]
+    [Authorize] // Allow both users and admins
     public async Task<IActionResult> GetMyRentalOrders([FromQuery] PaginationDto pagination)
     {
         // Validate user and get customer ID
@@ -320,11 +363,11 @@ public class RentalOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Create new rental order for current user - Simplified endpoint
+    /// Create new rental order for current user - Simplified endpoint for regular users only
     /// Automatically uses the authenticated user's customer account
     /// </summary>
     [HttpPost("create-for-me")]
-    [Authorize(Policy = "RequireUserRole")]
+    [Authorize(Policy = "RequireUserRole")] // Keep this as user-only since admins use the main endpoint
     public async Task<IActionResult> CreateRentalOrderForMe([FromBody] CreateRentalOrderForUserDto request)
     {
         // Get current user's customer ID
