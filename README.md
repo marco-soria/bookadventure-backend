@@ -867,10 +867,9 @@ class MobileBookService {
 
 ## 📄 License
 
-This project is for educational and portfolio purposes.
+This project is under the MIT license. See the `LICENSE` file for more details.
 
 ---
 
 **Author**: Marco Soria  
-**Built with**: .NET 9, Entity Framework Core, SQL Server  
-**Date**: August 2025
+**Built with**: .NET 9, Entity Framework Core, SQL Server
